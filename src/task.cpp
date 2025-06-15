@@ -15,7 +15,7 @@ void lichtschrankeTask(void *pvParameters)
         if (res.triggered && status == STATUS_NORMAL && res.time >= cooldownUntil)
         {
             calcLastTime(lastTrigger, res.time);
-            broadcastTimeToClients(getLastTime());
+            broadcastLastTime(getLastTime());
             lastTrigger = res.time;
             status = STATUS_TRIGGERED;
             // Serial.printf("🔴 %lu\n", res.time);

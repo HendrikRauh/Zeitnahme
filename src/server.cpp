@@ -9,9 +9,19 @@ void wsBrodcastMessage(String message)
   ws.textAll(message);
 }
 
-void broadcastTimeToClients(unsigned long time)
+void broadcastLastTime(unsigned long lastTime)
 {
-  wsBrodcastMessage(String(time));
+  wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(lastTime) + "}");
+}
+
+void broadcastSavedDevices()
+{
+  wsBrodcastMessage("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
+}
+
+void broadcastDiscoveredDevices()
+{
+  wsBrodcastMessage("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
 }
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
@@ -25,20 +35,14 @@ void initWebsocket()
              {
     if (type == WS_EVT_CONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
-      // Sende initialen Status an neuen Client
+      // Status
       client->text("{\"type\":\"status\",\"status\":\"" + statusToString(getStatus()) + "\"}");
-      // Sende aktuelle Liste der entdeckten Geräte
-      sendDiscoveryMessage();
-      DynamicJsonDocument doc(1024);
-      JsonArray arr = doc.to<JsonArray>();
-      for (const auto& dev : getDiscoveredDevices()) {
-        JsonObject obj = arr.createNestedObject();
-        obj["mac"] = macToString(dev.mac);
-        obj["role"] = roleToString(dev.role);
-      }
-      String jsonDevices;
-      serializeJson(arr, jsonDevices);
-      client->text("{\"type\":\"initial_devices\",\"data\":" + jsonDevices + "}");
+      // Letzte Zeit
+      client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
+      // Gespeicherte Geräte
+      client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
+      // Entdeckte Geräte
+      client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
     } else if (type == WS_EVT_DISCONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u getrennt.\n", client->id());
     } });
@@ -374,11 +378,21 @@ String generateConfigPage()
                 macToString(getMacAddress()) + R"rawliteral(";
         const selfRole = ")rawliteral" +
                 roleToString(getOwnRole()) + R"rawliteral(";
-        const savedDevices = )rawliteral" +
-                getSavedDevicesJson() + R"rawliteral(;
-        let discoveredDevices = )rawliteral" +
-                getDiscoveredDevicesJson() + R"rawliteral(;
-        if (!Array.isArray(discoveredDevices)) discoveredDevices = [];
+        let savedDevices = [];
+        let discoveredDevices = [];
+
+        let ws = new WebSocket('ws://' + location.host + '/ws');
+        ws.onmessage = function(event) {
+          let msg = {};
+          try { msg = JSON.parse(event.data); } catch(e) {}
+          if (msg.type === "saved_devices") {
+            savedDevices = msg.data;
+            showAllDevices();
+          } else if (msg.type === "discovered_devices") {
+            discoveredDevices = msg.data;
+            showAllDevices();
+          }
+        };
 
         function getAllDevices() {
           let all = [...savedDevices];
