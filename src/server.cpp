@@ -132,18 +132,18 @@ String generateMainPage(unsigned long lastTime)
           return parts.join(':') + ',' + String(milliseconds).padStart(3, '0');
         }
 
-        let ws = new WebSocket('ws://' + location.host + '/ws');
-        ws.onmessage = function(event) {
-          let val = event.data;
-          try {
-            let msg = JSON.parse(event.data);
-            if (msg.type !== undefined) return; // ignore status etc.
-            val = msg;
-          } catch(e) {}
-          document.getElementById('zeit').textContent = formatDuration(Number(val));
-        };
         // Initial formatting
         document.getElementById('zeit').textContent = formatDuration(Number(document.getElementById('zeit').textContent));
+
+        let ws = new WebSocket('ws://' + location.host + '/ws');
+        ws.onmessage = function(event) {
+          try {
+            let msg = JSON.parse(event.data);
+            if (msg.type === "lastTime") {
+              document.getElementById('zeit').textContent = formatDuration(Number(msg.value));
+            }
+          } catch(e) {}
+        };
       </script>
     </body>
     </html>
