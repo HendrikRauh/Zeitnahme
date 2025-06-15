@@ -1,0 +1,131 @@
+#include <Utility.h>
+
+String roleToString(Role role)
+{
+    switch (role)
+    {
+    case ROLE_START:
+        return "Start";
+    case ROLE_ZIEL:
+        return "Ziel";
+    case ROLE_IGNORE:
+        return "Ignorieren";
+    default:
+        return "unknown";
+    }
+}
+
+Role stringToRole(const String &text)
+{
+    if (text == "Start")
+        return ROLE_START;
+    if (text == "Ziel")
+        return ROLE_ZIEL;
+    return ROLE_IGNORE;
+}
+
+String macToString(const uint8_t *mac)
+{
+    char buf[18];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(buf);
+}
+
+String statusToString(LichtschrankeStatus status)
+{
+    switch (status)
+    {
+    case STATUS_NORMAL:
+        return "normal";
+    case STATUS_TRIGGERED:
+        return "triggered";
+    case STATUS_COOLDOWN:
+        return "cooldown";
+    case STATUS_TRIGGERED_IN_COOLDOWN:
+        return "triggered_in_cooldown";
+    default:
+        return "unknown";
+    }
+}
+
+void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
+{
+    Serial.printf("[ROLE_DEBUG] Identity empfangen von MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
+    if (checkIfDeviceIsSaved(senderMac))
+    {
+        Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt, ändere die Rolle im Speicher zu %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
+        changeSavedDevice(senderMac, senderRole);
+    }
+    if (checkIfDeviceIsDiscoveredList(senderMac))
+    {
+        Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits in den gefundenen Geräten\n", macToString(senderMac).c_str());
+    }
+    else
+    {
+        Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
+        addDiscoveredDevice(senderMac, senderRole);
+    }
+    printDeviceLists();
+}
+
+void printDeviceLists()
+{
+    Serial.println("\n=== Geräteübersicht ===");
+    Serial.printf("Eigene MAC: %s\n", macToString(getMacAddress()).c_str());
+
+    Serial.println("\nEntdeckte Geräte:");
+    for (const auto &dev : getDiscoveredDevices())
+    {
+        Serial.printf("%s - Rolle: %s\n",
+                      macToString(dev.mac).c_str(),
+                      roleToString(dev.role));
+    }
+
+    Serial.println("\nGespeicherte Geräte:");
+    for (const auto &dev : getSavedDevices())
+    {
+        Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X - Rolle: %s\n",
+                      dev.mac[0], dev.mac[1], dev.mac[2], dev.mac[3], dev.mac[4], dev.mac[5],
+                      roleToString(dev.role).c_str());
+    }
+    Serial.println("=====================\n");
+}
+
+String getSavedDevicesJson()
+{
+    DynamicJsonDocument doc(1024);
+    JsonArray arr = doc.to<JsonArray>();
+
+    for (const auto &dev : getSavedDevices())
+    {
+        JsonObject obj = arr.createNestedObject();
+
+        obj["mac"] = macToString(dev.mac);
+        obj["role"] = roleToString(dev.role);
+    }
+
+    String jsonStr;
+    serializeJson(arr, jsonStr);
+    return jsonStr;
+}
+
+String getDiscoveredDevicesJson()
+{
+    sendDiscoveryMessage();
+
+    DynamicJsonDocument doc(1024);
+    JsonArray arr = doc.to<JsonArray>();
+
+    for (const auto &dev : getDiscoveredDevices())
+    {
+        JsonObject obj = arr.createNestedObject();
+
+        obj["mac"] = macToString(dev.mac);
+        obj["role"] = roleToString(dev.role);
+    }
+
+    String jsonStr;
+    serializeJson(arr, jsonStr);
+    return jsonStr;
+}
