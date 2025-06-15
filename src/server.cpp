@@ -28,6 +28,17 @@ void broadcastLichtschrankeStatus(LichtschrankeStatus status)
   wsBrodcastMessage("{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}");
 }
 
+void notifyDiscoveredDevicesChanged()
+{
+  broadcastDiscoveredDevices();
+}
+
+void onDeviceDiscoveryFinished()
+{
+  notifyDiscoveredDevicesChanged();
+}
+
+// Passe die WebSocket-Init an:
 void initWebsocket()
 {
   ws.onEvent([](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *, uint8_t *, size_t)
@@ -40,8 +51,10 @@ void initWebsocket()
       client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
       // Gespeicherte Geräte
       client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
-      // Entdeckte Geräte
+      // Entdeckte Geräte (kann noch leer sein)
       client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
+      // Starte Gerätesuche für diesen Client
+      searchForDevices(); // <-- NEU: Suche direkt beim Connect starten!
     } else if (type == WS_EVT_DISCONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u getrennt.\n", client->id());
     } });
