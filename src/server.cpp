@@ -196,6 +196,23 @@ String generateConfigPage()
         .not-triggered { color: #43a047; }
         .cooldown { color: #fbc02d; }
         .unknown { color: #888; }
+        #recalibrateBtn {
+          display: block;
+          margin: 0.5em auto 1.5em auto;
+          font-size: 1.1em;
+          padding: 0.7em 1.5em;
+          border-radius: 8px;
+          border: 1px solid #1976d2;
+          background: #2196f3;
+          color: #fff;
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(33,150,243,0.07);
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        #recalibrateBtn:active, #recalibrateBtn:hover {
+          background: #1976d2;
+        }
         .table-container {
           width: 100%;
           max-width: 600px;
@@ -276,6 +293,10 @@ String generateConfigPage()
             right: 4vw;
             bottom: 4vw;
           }
+          #recalibrateBtn {
+            font-size: 1em;
+            padding: 0.6em 1.1em;
+          }
         }
       </style>
     </head>
@@ -285,6 +306,7 @@ String generateConfigPage()
         <span id="statusEmoji" class="unknown">⚪</span>
         <span id="statusText">Unbekannt</span>
       </div>
+      <button id="recalibrateBtn">Rekalibrieren</button>
       <div class="table-container">
         <table id="devicesTable">
           <thead>
@@ -338,6 +360,13 @@ String generateConfigPage()
               }
             }
           } catch(e) {}
+        };
+
+        // Rekalibrieren
+        document.getElementById('recalibrateBtn').onclick = function() {
+          fetch('/recalibrate', {method: 'POST'})
+            .then(response => response.text())
+            .then(text => alert(text));
         };
 
         // Geräteverwaltung
