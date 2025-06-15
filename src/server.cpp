@@ -1,7 +1,6 @@
 #include <server.h>
 
 AsyncWebServer server(80);
-
 AsyncWebSocket ws("/ws");
 
 void wsBrodcastMessage(String message)
@@ -322,58 +321,7 @@ String generateConfigPage()
       <button id="resetBtn">Alle Einstellungen löschen</button>
       <button id="home-btn" onclick="window.location.href='/'" aria-label="Zur Hauptseite">🏠</button>
       <script>
-        // Statusanzeige per WebSocket
-        let ws = new WebSocket('ws://' + location.host + '/ws');
-        ws.onmessage = function(event) {
-          try {
-            let msg = JSON.parse(event.data);
-            if (msg.type === "status") {
-              let emoji = document.getElementById('statusEmoji');
-              let text = document.getElementById('statusText');
-              switch (msg.status) {
-                case "normal":
-                  emoji.textContent = "🟢";
-                  emoji.className = "not-triggered";
-                  text.textContent = "Bereit";
-                  break;
-                case "triggered":
-                  emoji.textContent = "🔴";
-                  emoji.className = "triggered";
-                  text.textContent = "Ausgelöst";
-                  break;
-                case "cooldown":
-                  emoji.textContent = "🟡";
-                  emoji.className = "cooldown";
-                  text.textContent = "Cooldown";
-                  break;
-                case "triggered_in_cooldown":
-                  emoji.textContent = "🟠";
-                  emoji.className = "cooldown";
-                  text.textContent = "Ausgelöst (Cooldown)";
-                  break;
-                default:
-                  emoji.textContent = "⚪";
-                  emoji.className = "unknown";
-                  text.textContent = "Unbekannt";
-              }
-            } else if (msg.type === "device") {
-              if (!msg.data.role) msg.data.role = "-";
-              if (!discoveredDevices.some(d => d.mac === msg.data.mac)) {
-                discoveredDevices.push(msg.data);
-                showAllDevices();
-              }
-            }
-          } catch(e) {}
-        };
-
-        // Rekalibrieren
-        document.getElementById('recalibrateBtn').onclick = function() {
-          fetch('/recalibrate', {method: 'POST'})
-            .then(response => response.text())
-            .then(text => alert(text));
-        };
-
-        // Geräteverwaltung
+        // Variablen nur einmal deklarieren!
         const selfMac = ")rawliteral" +
                 macToString(getMacAddress()) + R"rawliteral(";
         const selfRole = ")rawliteral" +
@@ -391,7 +339,42 @@ String generateConfigPage()
           } else if (msg.type === "discovered_devices") {
             discoveredDevices = msg.data;
             showAllDevices();
+          } else if (msg.type === "status") {
+            let emoji = document.getElementById('statusEmoji');
+            let text = document.getElementById('statusText');
+            switch (msg.status) {
+              case "normal":
+                emoji.textContent = "🟢";
+                emoji.className = "not-triggered";
+                text.textContent = "Bereit";
+                break;
+              case "triggered":
+                emoji.textContent = "🔴";
+                emoji.className = "triggered";
+                text.textContent = "Ausgelöst";
+                break;
+              case "cooldown":
+                emoji.textContent = "🟡";
+                emoji.className = "cooldown";
+                text.textContent = "Cooldown";
+                break;
+              case "triggered_in_cooldown":
+                emoji.textContent = "🟠";
+                emoji.className = "cooldown";
+                text.textContent = "Ausgelöst (Cooldown)";
+                break;
+              default:
+                emoji.textContent = "⚪";
+                emoji.className = "unknown";
+                text.textContent = "Unbekannt";
+            }
           }
+        };
+
+        document.getElementById('recalibrateBtn').onclick = function() {
+          fetch('/recalibrate', {method: 'POST'})
+            .then(response => response.text())
+            .then(text => alert(text));
         };
 
         function getAllDevices() {
