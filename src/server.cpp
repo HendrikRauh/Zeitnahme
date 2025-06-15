@@ -160,32 +160,141 @@ String generateConfigPage()
     <head>
       <title>Konfiguration</title>
       <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
       <style>
-        #statusEmoji { font-size: 2em; vertical-align: middle; }
-        .triggered { color: red; }
-        .not-triggered { color: green; }
-        .cooldown { color: orange; }
-        .unknown { color: gray; }
-        .status-row { margin-bottom: 1em; }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          background: #f8f8f8;
+        }
+        body {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          font-family: system-ui, sans-serif;
+        }
+        h1 {
+          font-size: 2em;
+          margin-top: 1.2em;
+          margin-bottom: 0.5em;
+          text-align: center;
+        }
+        .status-row {
+          margin: 1.2em 0 1em 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3em;
+        }
+        #statusEmoji {
+          font-size: 2.2em;
+          margin-right: 0.5em;
+        }
+        .triggered { color: #e53935; }
+        .not-triggered { color: #43a047; }
+        .cooldown { color: #fbc02d; }
+        .unknown { color: #888; }
+        .table-container {
+          width: 100%;
+          max-width: 600px;
+          overflow-x: auto;
+          margin-bottom: 1.5em;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: #fff;
+          border-radius: 10px;
+          overflow: hidden;
+          font-size: 1em;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        th, td {
+          padding: 0.7em 0.5em;
+          text-align: center;
+        }
+        th {
+          background: #f0f0f0;
+          font-weight: 600;
+        }
+        tr:nth-child(even) {
+          background: #fafafa;
+        }
+        select, button {
+          font-size: 1em;
+          padding: 0.3em 0.7em;
+          border-radius: 6px;
+          border: 1px solid #bbb;
+          background: #f9f9f9;
+        }
+        button {
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        button:active, button:hover {
+          background: #eee;
+        }
+        #resetBtn {
+          color: #e53935;
+          border: 1px solid #e53935;
+          background: #fff;
+          margin-top: 1.2em;
+          margin-bottom: 2.5em;
+        }
+        #home-btn {
+          position: fixed;
+          right: 5vw;
+          bottom: 5vw;
+          font-size: 2.5em;
+          background: #fff;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          z-index: 10;
+        }
+        #home-btn:active, #home-btn:hover {
+          background: #eee;
+        }
+        @media (max-width: 600px) {
+          h1 { font-size: 1.3em; }
+          .status-row { font-size: 1em; }
+          #statusEmoji { font-size: 1.5em; }
+          table { font-size: 0.95em; }
+          #home-btn {
+            width: 56px;
+            height: 56px;
+            font-size: 2em;
+            right: 4vw;
+            bottom: 4vw;
+          }
+        }
       </style>
     </head>
     <body>
       <h1>Konfiguration</h1>
       <div class="status-row">
-        Status der Lichtschranke:
         <span id="statusEmoji" class="unknown">⚪</span>
         <span id="statusText">Unbekannt</span>
       </div>
-      <hr/>
-      <h2>Geräteübersicht</h2>
-      <table border="1" id="devicesTable">
-        <thead>
-          <tr><th>MAC</th><th>Rolle</th><th>Aktion</th></tr>
-        </thead>
-        <tbody id="devicesBody"></tbody>
-      </table>
-      <a href="/">Zurück</a>
-      <button id="resetBtn" style="margin-left:20px;color:red;">Alle Einstellungen löschen</button>
+      <div class="table-container">
+        <table id="devicesTable">
+          <thead>
+            <tr><th>MAC</th><th>Rolle</th><th>Aktion</th></tr>
+          </thead>
+          <tbody id="devicesBody"></tbody>
+        </table>
+      </div>
+      <button id="resetBtn">Alle Einstellungen löschen</button>
+      <button id="home-btn" onclick="window.location.href='/'" aria-label="Zur Hauptseite">🏠</button>
       <script>
         // Statusanzeige per WebSocket
         let ws = new WebSocket('ws://' + location.host + '/ws');
@@ -280,9 +389,9 @@ String generateConfigPage()
             let isOnline = discoveredDevices.some(d => d.mac === dev.mac);
 
             let macColor = "black";
-            if (isSaved && isOnline) macColor = "green";
-            else if (isSaved && !isOnline) macColor = "red";
-            else if (!isSaved && isOnline) macColor = "gray";
+            if (isSaved && isOnline) macColor = "#43a047";
+            else if (isSaved && !isOnline) macColor = "#e53935";
+            else if (!isSaved && isOnline) macColor = "#888";
 
             let roleOptions = ['-','Start','Ziel'].map(opt =>
               `<option value="${opt}"${role===opt?' selected':''}>${opt}</option>`
