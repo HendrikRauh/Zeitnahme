@@ -9,9 +9,19 @@ void wsBrodcastMessage(String message)
   ws.textAll(message);
 }
 
-void broadcastTimeToClients(unsigned long time)
+void broadcastLastTime(unsigned long lastTime)
 {
-  wsBrodcastMessage(String(time));
+  wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(lastTime) + "}");
+}
+
+void broadcastSavedDevices()
+{
+  wsBrodcastMessage("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
+}
+
+void broadcastDiscoveredDevices()
+{
+  wsBrodcastMessage("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
 }
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
@@ -25,20 +35,14 @@ void initWebsocket()
              {
     if (type == WS_EVT_CONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
-      // Sende initialen Status an neuen Client
+      // Status
       client->text("{\"type\":\"status\",\"status\":\"" + statusToString(getStatus()) + "\"}");
-      // Sende aktuelle Liste der entdeckten Geräte
-      sendDiscoveryMessage();
-      DynamicJsonDocument doc(1024);
-      JsonArray arr = doc.to<JsonArray>();
-      for (const auto& dev : getDiscoveredDevices()) {
-        JsonObject obj = arr.createNestedObject();
-        obj["mac"] = macToString(dev.mac);
-        obj["role"] = roleToString(dev.role);
-      }
-      String jsonDevices;
-      serializeJson(arr, jsonDevices);
-      client->text("{\"type\":\"initial_devices\",\"data\":" + jsonDevices + "}");
+      // Letzte Zeit
+      client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
+      // Gespeicherte Geräte
+      client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
+      // Entdeckte Geräte
+      client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
     } else if (type == WS_EVT_DISCONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u getrennt.\n", client->id());
     } });
@@ -91,37 +95,35 @@ String generateMainPage(unsigned long lastTime)
 
       let ws = new WebSocket('ws://' + location.host + '/ws');
       ws.onmessage = function(event) {
-        try {
-          let msg = JSON.parse(event.data);
-          if (msg.type === "status") {
-            let emoji = document.getElementById('statusEmoji');
-            switch (msg.status) {
-              case "normal":
-                emoji.textContent = "🟢";
-                emoji.className = "not-triggered";
-                break;
-              case "triggered":
-                emoji.textContent = "🔴";
-                emoji.className = "triggered";
-                break;
-              case "cooldown":
-                emoji.textContent = "🟡";
-                emoji.className = "cooldown";
-                break;
-              case "triggered_in_cooldown":
-                emoji.textContent = "🟠";
-                emoji.className = "cooldown";
-                break;
-              default:
-                emoji.textContent = "⚪";
-                emoji.className = "unknown";
-            }
-          } else {
-            document.getElementById('lastTime').textContent = formatDuration(Number(event.data));
+        let msg;
+        try { msg = JSON.parse(event.data); } catch(e) { return; }
+        if (msg.type === "status") {
+          let emoji = document.getElementById('statusEmoji');
+          switch (msg.status) {
+            case "normal":
+              emoji.textContent = "🟢";
+              emoji.className = "not-triggered";
+              break;
+            case "triggered":
+              emoji.textContent = "🔴";
+              emoji.className = "triggered";
+              break;
+            case "cooldown":
+              emoji.textContent = "🟡";
+              emoji.className = "cooldown";
+              break;
+            case "triggered_in_cooldown":
+              emoji.textContent = "🟠";
+              emoji.className = "cooldown";
+              break;
+            default:
+              emoji.textContent = "⚪";
+              emoji.className = "unknown";
           }
-        } catch(e) {
-          document.getElementById('lastTime').textContent = formatDuration(Number(event.data));
+        } else if (msg.type === "lastTime") {
+          document.getElementById('lastTime').textContent = formatDuration(Number(msg.value));
         }
+        // Weitere Typen ignorieren auf der Hauptseite
       };
       // Initial formatting
       document.getElementById('lastTime').textContent = formatDuration(Number(document.getElementById('lastTime').textContent));
@@ -166,11 +168,21 @@ String generateConfigPage()
                 macToString(getMacAddress()) + R"rawliteral(";
         const selfRole = ")rawliteral" +
                 roleToString(getOwnRole()) + R"rawliteral(";
-        const savedDevices = )rawliteral" +
-                getSavedDevicesJson() + R"rawliteral(;
-        let discoveredDevices = )rawliteral" +
-                getDiscoveredDevicesJson() + R"rawliteral(;
-        if (!Array.isArray(discoveredDevices)) discoveredDevices = [];
+        let savedDevices = [];
+        let discoveredDevices = [];
+
+        let ws = new WebSocket('ws://' + location.host + '/ws');
+        ws.onmessage = function(event) {
+          let msg = {};
+          try { msg = JSON.parse(event.data); } catch(e) {}
+          if (msg.type === "saved_devices") {
+            savedDevices = msg.data;
+            showAllDevices();
+          } else if (msg.type === "discovered_devices") {
+            discoveredDevices = msg.data;
+            showAllDevices();
+          }
+        };
 
         function getAllDevices() {
           let all = [...savedDevices];
@@ -235,20 +247,6 @@ String generateConfigPage()
         window.addEventListener('DOMContentLoaded', () => {
           discoverDevices();
         });
-
-        let ws = new WebSocket('ws://' + location.host + '/ws');
-        ws.onmessage = function(event) {
-          let msg = {};
-          try { msg = JSON.parse(event.data); } catch(e) {}
-          console.log("WebSocket message:", msg);
-          if (msg.type === "device") {
-            if (!msg.data.role) msg.data.role = "-";
-            if (!discoveredDevices.some(d => d.mac === msg.data.mac)) {
-              discoveredDevices.push(msg.data);
-              showAllDevices();
-            }
-          }
-        };
 
         function discoverDevices() {
           fetch('/discover', {method: 'POST'});

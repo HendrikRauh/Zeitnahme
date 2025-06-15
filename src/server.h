@@ -17,7 +17,11 @@ void wsBrodcastMessage(String message);
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status);
 
-void broadcastTimeToClients(unsigned long time);
+void broadcastLastTime(unsigned long lastTime);
+
+void broadcastSavedDevices();
+
+void broadcastDiscoveredDevices();
 
 void initWebpage();
 
