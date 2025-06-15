@@ -54,87 +54,101 @@ String generateMainPage(unsigned long lastTime)
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Lichtschranke</title>
+      <title>Zeitnahme</title>
       <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
       <style>
-        #statusEmoji { font-size: 2em; }
-        .triggered { color: red; }
-        .not-triggered { color: green; }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          background: #f8f8f8;
+        }
+        body {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
+        #zeit {
+          font-size: 10vw;
+          font-family: monospace;
+          margin-bottom: 0.5em;
+          word-break: break-all;
+          text-align: center;
+          color: #222;
+        }
+        #settings-btn {
+          position: fixed;
+          right: 5vw;
+          bottom: 5vw;
+          font-size: 2.5em;
+          background: #fff;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          z-index: 10;
+        }
+        #settings-btn:active, #settings-btn:hover {
+          background: #eee;
+        }
+        @media (max-width: 600px) {
+          #zeit {
+            font-size: 14vw;
+          }
+          #settings-btn {
+            width: 56px;
+            height: 56px;
+            font-size: 2em;
+            right: 4vw;
+            bottom: 4vw;
+          }
+        }
       </style>
     </head>
     <body>
-      <h1>Lichtschranke</h1>
-      <p>Status: <span id="statusEmoji" class="unknown">⚪</span></p>
-      <p>Letzte Zeit: <span id="lastTime">)rawliteral";
+      <div id="zeit">)rawliteral";
   html += String(lastTime);
-  html += R"rawliteral(</span></p>
-      <button onclick="recalibrate()">Rekalibrieren</button>
-      <button onclick="window.location.href='/config'">Einstellungen</button>
-    <script>
-      function recalibrate() {
-        fetch('/recalibrate', {method: 'POST'})
-          .then(response => response.text())
-          .then(text => alert(text));
-      }
+  html += R"rawliteral(</div>
+      <button id="settings-btn" onclick="window.location.href='/config'" aria-label="Einstellungen">⚙️</button>
+      <script>
+        function formatDuration(ms) {
+          let milliseconds = ms % 1000;
+          let totalSeconds = Math.floor(ms / 1000);
+          let seconds = totalSeconds % 60;
+          let totalMinutes = Math.floor(totalSeconds / 60);
+          let minutes = totalMinutes % 60;
+          let hours = Math.floor(totalMinutes / 60);
 
-      function formatDuration(ms) {
-        let milliseconds = ms % 1000;
-        let totalSeconds = Math.floor(ms / 1000);
-        let seconds = totalSeconds % 60;
-        let totalMinutes = Math.floor(totalSeconds / 60);
-        let minutes = totalMinutes % 60;
-        let hours = Math.floor(totalMinutes / 60);
+          let parts = [];
+          if (hours > 0) parts.push(String(hours));
+          if (minutes > 0 || hours > 0) parts.push(String(minutes).padStart(hours > 0 ? 2 : 1, '0'));
+          parts.push(String(seconds).padStart((minutes > 0 || hours > 0) ? 2 : 1, '0'));
 
-        let parts = [];
-        if (hours > 0) parts.push(String(hours));
-        if (minutes > 0 || hours > 0) parts.push(String(minutes).padStart(hours > 0 ? 2 : 1, '0'));
-        parts.push(String(seconds).padStart((minutes > 0 || hours > 0) ? 2 : 1, '0'));
-
-        return parts.join(':') + ',' + String(milliseconds).padStart(3, '0');
-      }
-
-      let ws = new WebSocket('ws://' + location.host + '/ws');
-      ws.onmessage = function(event) {
-        let msg;
-        try { msg = JSON.parse(event.data); } catch(e) { return; }
-        if (msg.type === "status") {
-          let emoji = document.getElementById('statusEmoji');
-          switch (msg.status) {
-            case "normal":
-              emoji.textContent = "🟢";
-              emoji.className = "not-triggered";
-              break;
-            case "triggered":
-              emoji.textContent = "🔴";
-              emoji.className = "triggered";
-              break;
-            case "cooldown":
-              emoji.textContent = "🟡";
-              emoji.className = "cooldown";
-              break;
-            case "triggered_in_cooldown":
-              emoji.textContent = "🟠";
-              emoji.className = "cooldown";
-              break;
-            default:
-              emoji.textContent = "⚪";
-              emoji.className = "unknown";
-          }
-        } else if (msg.type === "lastTime") {
-          document.getElementById('lastTime').textContent = formatDuration(Number(msg.value));
+          return parts.join(':') + ',' + String(milliseconds).padStart(3, '0');
         }
-        // Weitere Typen ignorieren auf der Hauptseite
-      };
-      // Initial formatting
-      document.getElementById('lastTime').textContent = formatDuration(Number(document.getElementById('lastTime').textContent));
-    </script>
-    <style>
-      #statusEmoji { font-size: 2em; }
-      .triggered { color: red; }
-      .not-triggered { color: green; }
-      .cooldown { color: orange; }
-      .unknown { color: gray; }
-    </style>
+
+        // Initial formatting
+        document.getElementById('zeit').textContent = formatDuration(Number(document.getElementById('zeit').textContent));
+
+        let ws = new WebSocket('ws://' + location.host + '/ws');
+        ws.onmessage = function(event) {
+          try {
+            let msg = JSON.parse(event.data);
+            if (msg.type === "lastTime") {
+              document.getElementById('zeit').textContent = formatDuration(Number(msg.value));
+            }
+          } catch(e) {}
+        };
+      </script>
     </body>
     </html>
   )rawliteral";
@@ -148,22 +162,218 @@ String generateConfigPage()
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Geräteübersicht</title><meta charset="utf-8"/>
+      <title>Konfiguration</title>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
       <style>
-        .status-online { color: green; font-weight: bold; }
-        .status-offline { color: gray; }
-      </style></head>
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          background: #f8f8f8;
+        }
+        body {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          font-family: system-ui, sans-serif;
+        }
+        h1 {
+          font-size: 2em;
+          margin-top: 1.2em;
+          margin-bottom: 0.5em;
+          text-align: center;
+        }
+        .status-row {
+          margin: 1.2em 0 1em 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3em;
+        }
+        #statusEmoji {
+          font-size: 2.2em;
+          margin-right: 0.5em;
+        }
+        .triggered { color: #e53935; }
+        .not-triggered { color: #43a047; }
+        .cooldown { color: #fbc02d; }
+        .unknown { color: #888; }
+        #recalibrateBtn {
+          display: block;
+          margin: 0.5em auto 1.5em auto;
+          font-size: 1.1em;
+          padding: 0.7em 1.5em;
+          border-radius: 8px;
+          border: 1px solid #1976d2;
+          background: #2196f3;
+          color: #fff;
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(33,150,243,0.07);
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        #recalibrateBtn:active, #recalibrateBtn:hover {
+          background: #1976d2;
+        }
+        .table-container {
+          width: 100%;
+          max-width: 600px;
+          overflow-x: auto;
+          margin-bottom: 1.5em;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: #fff;
+          border-radius: 10px;
+          overflow: hidden;
+          font-size: 1em;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        th, td {
+          padding: 0.7em 0.5em;
+          text-align: center;
+        }
+        th {
+          background: #f0f0f0;
+          font-weight: 600;
+        }
+        tr:nth-child(even) {
+          background: #fafafa;
+        }
+        select, button {
+          font-size: 1em;
+          padding: 0.3em 0.7em;
+          border-radius: 6px;
+          border: 1px solid #bbb;
+          background: #f9f9f9;
+        }
+        button {
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        button:active, button:hover {
+          background: #eee;
+        }
+        #resetBtn {
+          color: #e53935;
+          border: 1px solid #e53935;
+          background: #fff;
+          margin-top: 1.2em;
+          margin-bottom: 2.5em;
+        }
+        #home-btn {
+          position: fixed;
+          right: 5vw;
+          bottom: 5vw;
+          font-size: 2.5em;
+          background: #fff;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          z-index: 10;
+        }
+        #home-btn:active, #home-btn:hover {
+          background: #eee;
+        }
+        @media (max-width: 600px) {
+          h1 { font-size: 1.3em; }
+          .status-row { font-size: 1em; }
+          #statusEmoji { font-size: 1.5em; }
+          table { font-size: 0.95em; }
+          #home-btn {
+            width: 56px;
+            height: 56px;
+            font-size: 2em;
+            right: 4vw;
+            bottom: 4vw;
+          }
+          #recalibrateBtn {
+            font-size: 1em;
+            padding: 0.6em 1.1em;
+          }
+        }
+      </style>
+    </head>
     <body>
-      <h1>Geräteübersicht</h1>
-      <table border="1" id="devicesTable">
-        <thead>
-          <tr><th>MAC</th><th>Rolle</th><th>Aktion</th></tr>
-        </thead>
-        <tbody id="devicesBody"></tbody>
-      </table>
-      <a href="/">Zurück</a>
-      <button id="resetBtn" style="margin-left:20px;color:red;">Alle Einstellungen löschen</button>
+      <h1>Konfiguration</h1>
+      <div class="status-row">
+        <span id="statusEmoji" class="unknown">⚪</span>
+        <span id="statusText">Unbekannt</span>
+      </div>
+      <button id="recalibrateBtn">Rekalibrieren</button>
+      <div class="table-container">
+        <table id="devicesTable">
+          <thead>
+            <tr><th>MAC</th><th>Rolle</th><th>Aktion</th></tr>
+          </thead>
+          <tbody id="devicesBody"></tbody>
+        </table>
+      </div>
+      <button id="resetBtn">Alle Einstellungen löschen</button>
+      <button id="home-btn" onclick="window.location.href='/'" aria-label="Zur Hauptseite">🏠</button>
       <script>
+        // Statusanzeige per WebSocket
+        let ws = new WebSocket('ws://' + location.host + '/ws');
+        ws.onmessage = function(event) {
+          try {
+            let msg = JSON.parse(event.data);
+            if (msg.type === "status") {
+              let emoji = document.getElementById('statusEmoji');
+              let text = document.getElementById('statusText');
+              switch (msg.status) {
+                case "normal":
+                  emoji.textContent = "🟢";
+                  emoji.className = "not-triggered";
+                  text.textContent = "Bereit";
+                  break;
+                case "triggered":
+                  emoji.textContent = "🔴";
+                  emoji.className = "triggered";
+                  text.textContent = "Ausgelöst";
+                  break;
+                case "cooldown":
+                  emoji.textContent = "🟡";
+                  emoji.className = "cooldown";
+                  text.textContent = "Cooldown";
+                  break;
+                case "triggered_in_cooldown":
+                  emoji.textContent = "🟠";
+                  emoji.className = "cooldown";
+                  text.textContent = "Ausgelöst (Cooldown)";
+                  break;
+                default:
+                  emoji.textContent = "⚪";
+                  emoji.className = "unknown";
+                  text.textContent = "Unbekannt";
+              }
+            } else if (msg.type === "device") {
+              if (!msg.data.role) msg.data.role = "-";
+              if (!discoveredDevices.some(d => d.mac === msg.data.mac)) {
+                discoveredDevices.push(msg.data);
+                showAllDevices();
+              }
+            }
+          } catch(e) {}
+        };
+
+        // Rekalibrieren
+        document.getElementById('recalibrateBtn').onclick = function() {
+          fetch('/recalibrate', {method: 'POST'})
+            .then(response => response.text())
+            .then(text => alert(text));
+        };
+
+        // Geräteverwaltung
         const selfMac = ")rawliteral" +
                 macToString(getMacAddress()) + R"rawliteral(";
         const selfRole = ")rawliteral" +
@@ -194,9 +404,6 @@ String generateConfigPage()
           return all;
         }
 
-        console.log("discoveredDevices:", discoveredDevices);
-        console.log("savedDevices:", savedDevices);
-        
         function showAllDevices() {
           let tbody = document.getElementById('devicesBody');
           tbody.innerHTML = '';
@@ -225,9 +432,9 @@ String generateConfigPage()
             let isOnline = discoveredDevices.some(d => d.mac === dev.mac);
 
             let macColor = "black";
-            if (isSaved && isOnline) macColor = "green";
-            else if (isSaved && !isOnline) macColor = "red";
-            else if (!isSaved && isOnline) macColor = "gray";
+            if (isSaved && isOnline) macColor = "#43a047";
+            else if (isSaved && !isOnline) macColor = "#e53935";
+            else if (!isSaved && isOnline) macColor = "#888";
 
             let roleOptions = ['-','Start','Ziel'].map(opt =>
               `<option value="${opt}"${role===opt?' selected':''}>${opt}</option>`
@@ -277,17 +484,6 @@ String generateConfigPage()
             });
           }
         }
-
-        function saveDevice(mac, role) {
-          fetch('/save_device', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-              body: `mac=${encodeURIComponent(mac)}&role=${encodeURIComponent(role)}`
-          }).then(() => {
-              alert('Gerät gespeichert!');
-              discoverDevices();
-          });
-      }
 
         document.getElementById('resetBtn').onclick = function() {
           if (confirm("Wirklich alle Einstellungen löschen? Das Gerät muss danach neu konfiguriert werden!")) {
