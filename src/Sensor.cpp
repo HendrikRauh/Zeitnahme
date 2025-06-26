@@ -20,9 +20,14 @@ MeasureResult measure()
     MeasureResult res;
     res.time = millis();
     float dist = ultrasonic.getDistanceCM();
+    if (dist == 0)
+    {
+        dist = 400;
+    }
+
     // res.triggered = (fabs(ultrasonic.getDistanceCM() - baseDistance) >= THRESHOLD_CM);
     res.triggered = (fabs(dist - baseDistance) >= THRESHOLD_CM);
-    Serial.printf("Dist: %f, %d\n", dist, res.triggered);
+    Serial.printf("%s | Dist: %.0f\n", res.triggered ? "🔴" : "🟢", dist);
     return res;
 }
 
