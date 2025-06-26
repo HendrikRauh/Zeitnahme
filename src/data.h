@@ -52,4 +52,9 @@ bool changeOtherDevice(const uint8_t *mac, Role role);
 
 void changeOwnRole(Role newRole);
 
+// Sensor Threshold Funktionen
+float getSensorThreshold();
+
+void setSensorThreshold(float threshold);
+
 #endif

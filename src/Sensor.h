@@ -22,4 +22,11 @@ float calibrateSensor();
 void initSensor();
 
 MeasureResult measure();
+
+void updateThresholdCache();
+
+float getCurrentThreshold();
+
+float getBaseDistance();
+
 #endif

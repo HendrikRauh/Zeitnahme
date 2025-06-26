@@ -1,4 +1,5 @@
 #include <data.h>
+#include <Sensor.h>
 
 Role currentRole;
 
@@ -220,4 +221,34 @@ void changeOwnRole(Role newRole)
 void clearDiscoveredDevices()
 {
     discoveredDevices.clear();
+}
+
+// Sensor Threshold Funktionen
+constexpr float DEFAULT_THRESHOLD_CM = 50.0f;
+
+float getSensorThreshold()
+{
+    preferences.begin("lichtschranke", true);
+    float threshold = preferences.getFloat("threshold", DEFAULT_THRESHOLD_CM);
+    preferences.end();
+    Serial.printf("[THRESHOLD_DEBUG] Threshold geladen: %.2f cm\n", threshold);
+    return threshold;
+}
+
+void setSensorThreshold(float threshold)
+{
+    if (threshold <= 0 || threshold > 200)
+    {
+        Serial.printf("[THRESHOLD_DEBUG] Ungültiger Threshold-Wert: %.2f cm. Verwende Default (%.2f cm).\n", threshold, DEFAULT_THRESHOLD_CM);
+        threshold = DEFAULT_THRESHOLD_CM;
+    }
+
+    preferences.begin("lichtschranke", false);
+    preferences.putFloat("threshold", threshold);
+    preferences.end();
+
+    Serial.printf("[THRESHOLD_DEBUG] Threshold gesetzt auf: %.2f cm\n", threshold);
+
+    // Aktualisiere den Cache im Sensor-Modul für bessere Performance
+    updateThresholdCache();
 }

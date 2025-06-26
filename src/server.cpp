@@ -202,28 +202,120 @@ String generateConfigPage()
         .not-triggered { color: #43a047; }
         .cooldown { color: #fbc02d; }
         .unknown { color: #888; }
-        #recalibrateBtn {
-          display: block;
-          margin: 0.5em auto 1.5em auto;
-          font-size: 1.1em;
-          padding: 0.7em 1.5em;
-          border-radius: 8px;
-          border: 1px solid #1976d2;
-          background: #2196f3;
-          color: #fff;
-          font-weight: 600;
-          box-shadow: 0 2px 8px rgba(33,150,243,0.07);
-          cursor: pointer;
-          transition: background 0.2s;
+        .threshold-container {
+          background: #fff;
+          border-radius: 10px;
+          padding: 1.5em;
+          margin: 1em auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+          max-width: 600px;
+          width: fit-content;
+          min-width: 300px;
         }
-        #recalibrateBtn:active, #recalibrateBtn:hover {
+        .sensor-grid {
+          display: grid;
+          grid-template-columns: auto auto;
+          gap: 2em;
+          justify-content: center;
+        }
+        .sensor-item {
+          display: flex;
+          flex-direction: column;
+          min-width: 180px;
+          max-width: 250px;
+        }
+        .sensor-label {
+          font-weight: 600;
+          font-size: 1.1em;
+          margin-bottom: 0.5em;
+          color: #333;
+        }
+        .sensor-value {
+          font-family: monospace;
+          font-size: 1.2em;
+          color: #2196f3;
+          margin-bottom: 0.8em;
+          padding: 0.5em;
+          background: #f0f8ff;
+          border-radius: 6px;
+          border-left: 4px solid #2196f3;
+          min-height: 1.5em;
+          display: flex;
+          align-items: center;
+        }
+        .sensor-input {
+          display: flex;
+          align-items: center;
+          gap: 0.5em;
+          margin-bottom: 0.8em;
+        }
+        .sensor-input input {
+          flex: 1;
+          padding: 0.5em;
+          border: 1px solid #bbb;
+          border-radius: 6px;
+          font-size: 1em;
+          min-width: 80px;
+          max-width: 120px;
+        }
+        .sensor-input span {
+          color: #666;
+          font-size: 0.9em;
+          min-width: 30px;
+        }
+        .sensor-button {
+          width: 100%;
+          max-width: 200px;
+          background: #2196f3;
+          color: white;
+          border: 1px solid #1976d2;
+          padding: 0.8em 1.5em;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 1em;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+        .sensor-button:hover {
           background: #1976d2;
         }
+        .sensor-button.success {
+          background: #4caf50 !important;
+          border-color: #45a049 !important;
+          color: white !important;
+        }
+        .sensor-button.success:hover {
+          background: #4caf50 !important;
+          border-color: #45a049 !important;
+          color: white !important;
+        }
+        .sensor-button.success:disabled {
+          background: #4caf50 !important;
+          border-color: #45a049 !important;
+          color: white !important;
+          opacity: 1 !important;
+          cursor: default !important;
+        }
+        .sensor-button:disabled {
+          background: #bbbbbb !important;
+          border-color: #aaaaaa !important;
+          color: #ffffff !important;
+          cursor: not-allowed !important;
+          opacity: 0.6;
+        }
+        .sensor-button.changed {
+          background: #2196f3 !important;
+          border-color: #1976d2 !important;
+          opacity: 1;
+        }
+        .sensor-button.changed:hover {
+          background: #1976d2 !important;
+        }
         .table-container {
-          width: 100%;
-          max-width: 600px;
+          width: fit-content;
+          max-width: 100%;
           overflow-x: auto;
-          margin-bottom: 1.5em;
+          margin: 0 auto 1.5em auto;
         }
         table {
           width: 100%;
@@ -299,9 +391,56 @@ String generateConfigPage()
             right: 4vw;
             bottom: 4vw;
           }
-          #recalibrateBtn {
+          .threshold-container {
+            padding: 1em;
+            margin: 1em 0.5em;
+            width: fit-content;
+            min-width: 280px;
+            max-width: calc(100vw - 1em);
+          }
+          .sensor-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5em;
+            justify-content: stretch;
+          }
+          .sensor-item {
+            min-width: auto;
+            max-width: none;
+          }
+          .sensor-label {
             font-size: 1em;
-            padding: 0.6em 1.1em;
+          }
+          .sensor-value {
+            font-size: 1.1em;
+            padding: 0.4em;
+          }
+          .sensor-button {
+            padding: 0.7em 1em;
+            font-size: 0.95em;
+            max-width: none;
+          }
+          .sensor-input input {
+            padding: 0.6em 0.5em;
+            max-width: 100px;
+          }
+        }
+        
+        @media (max-width: 400px) {
+          .threshold-container {
+            margin: 0.5em 0.25em;
+            padding: 0.8em;
+            min-width: 250px;
+            max-width: calc(100vw - 0.5em);
+          }
+          .sensor-grid {
+            gap: 1em;
+          }
+          .sensor-button {
+            padding: 0.8em 0.5em;
+            font-size: 0.9em;
+          }
+          .sensor-input input {
+            max-width: 80px;
           }
         }
       </style>
@@ -312,7 +451,27 @@ String generateConfigPage()
         <span id="statusEmoji" class="unknown">⚪</span>
         <span id="statusText">Unbekannt</span>
       </div>
-      <button id="recalibrateBtn">Rekalibrieren</button>
+      <div class="threshold-container">
+        <h3 style="margin-top: 0; margin-bottom: 1.5em;">Sensor-Einstellungen</h3>
+        
+        <div class="sensor-grid">
+          <div class="sensor-item">
+            <div class="sensor-label">Basisdistanz</div>
+            <div class="sensor-value" id="baseDistanceValue">-- cm</div>
+            <button class="sensor-button" id="recalibrateBtn">Rekalibrieren</button>
+          </div>
+          
+          <div class="sensor-item">
+            <div class="sensor-label">Auslöseschwelle</div>
+            <div class="sensor-input">
+              <input type="number" id="thresholdInput" min="1" max="200" step="0.1" value="50.0" placeholder="50.0">
+              <span>cm</span>
+            </div>
+            <button class="sensor-button" id="saveThresholdBtn">Schwelle speichern</button>
+          </div>
+        </div>
+        
+      </div>
       <div class="table-container">
         <table id="devicesTable">
           <thead>
@@ -375,9 +534,127 @@ String generateConfigPage()
         };
 
         document.getElementById('recalibrateBtn').onclick = function() {
+          const btn = this;
+          const originalText = btn.textContent;
+          btn.textContent = 'Kalibriere...';
+          btn.disabled = true;
+          btn.classList.remove('success'); // Stelle sicher, dass kein alter Zustand da ist
+          
           fetch('/recalibrate', {method: 'POST'})
             .then(response => response.text())
-            .then(text => alert(text));
+            .then(text => {
+              // Aktualisiere die Basisdistanz-Anzeige nach Rekalibrierung
+              loadBaseDistance();
+              
+              // Visuelles Feedback
+              btn.textContent = '✓ Kalibriert';
+              btn.disabled = true; // Button ist während grünem Zustand deaktiviert
+              btn.classList.add('success');
+              
+              setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('success');
+                btn.disabled = false;
+              }, 2000);
+            })
+            .catch(() => {
+              btn.textContent = originalText;
+              btn.classList.remove('success');
+              btn.disabled = false;
+            });
+        };
+
+        // Lade aktuellen Threshold-Wert beim Laden der Seite
+        let originalThreshold = 50.0;
+        
+        fetch('/get_threshold')
+          .then(response => response.json())
+          .then(data => {
+            originalThreshold = data.threshold;
+            document.getElementById('thresholdInput').value = data.threshold;
+            updateThresholdButton();
+          })
+          .catch(err => console.log('Fehler beim Laden des Threshold-Werts:', err));
+
+        // Lade aktuelle Basisdistanz beim Laden der Seite
+        function loadBaseDistance() {
+          fetch('/get_base_distance')
+            .then(response => response.json())
+            .then(data => {
+              document.getElementById('baseDistanceValue').textContent = data.baseDistance.toFixed(1) + ' cm';
+            })
+            .catch(err => console.log('Fehler beim Laden der Basisdistanz:', err));
+        }
+        loadBaseDistance();
+
+        function updateThresholdButton() {
+          const input = document.getElementById('thresholdInput');
+          const button = document.getElementById('saveThresholdBtn');
+          const currentValue = parseFloat(input.value);
+          
+          if (isNaN(currentValue) || currentValue === originalThreshold) {
+            button.disabled = true;
+            button.classList.remove('changed');
+            button.textContent = 'Schwelle speichern';
+          } else {
+            button.disabled = false;
+            button.classList.add('changed');
+            button.textContent = 'Schwelle speichern';
+          }
+        }
+
+        // Überwache Eingabefeld für Änderungen
+        document.getElementById('thresholdInput').addEventListener('input', updateThresholdButton);
+        document.getElementById('thresholdInput').addEventListener('change', updateThresholdButton);
+
+        document.getElementById('saveThresholdBtn').onclick = function() {
+          let threshold = parseFloat(document.getElementById('thresholdInput').value);
+          if (isNaN(threshold) || threshold <= 0 || threshold > 200) {
+            // Visuelles Feedback für Fehler
+            const input = document.getElementById('thresholdInput');
+            const originalBorder = input.style.borderColor;
+            input.style.borderColor = '#e53935';
+            input.style.boxShadow = '0 0 5px rgba(229, 57, 53, 0.3)';
+            
+            setTimeout(() => {
+              input.style.borderColor = originalBorder;
+              input.style.boxShadow = '';
+            }, 2000);
+            return;
+          }
+          
+          const btn = this;
+          const originalText = btn.textContent;
+          btn.textContent = 'Speichere...';
+          btn.disabled = true;
+          btn.classList.remove('changed');
+          
+          fetch('/set_threshold', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'threshold=' + threshold
+          })
+            .then(response => response.text())
+            .then(text => {
+              // Aktualisiere den ursprünglichen Wert
+              originalThreshold = threshold;
+              
+              // Visuelles Feedback für Erfolg
+              btn.textContent = '✓ Gespeichert';
+              btn.classList.remove('changed');
+              btn.classList.add('success');
+              btn.disabled = true; // Button ist während grünem Zustand deaktiviert
+              
+              setTimeout(() => {
+                btn.classList.remove('success');
+                updateThresholdButton(); // Reset Button-Status (wird wieder grau/deaktiviert)
+              }, 2000);
+            })
+            .catch(err => {
+              btn.textContent = originalText;
+              btn.classList.add('changed');
+              updateThresholdButton();
+            });
         };
 
         function getAllDevices() {
@@ -569,6 +846,32 @@ request->send(400, "text/plain", "Missing MAC or role");
 Serial.println("[WEB] POST /recalibrate aufgerufen. Starte Rekalibrierung.");
 String msg = "Rekalibriert! Neue Distanz: " + String(calibrateSensor(), 2) + " cm";
 request->send(200, "text/plain", msg); });
+
+  server.on("/get_threshold", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] GET /get_threshold aufgerufen.");
+float threshold = getSensorThreshold();
+String json = "{\"threshold\":" + String(threshold, 1) + "}";
+request->send(200, "application/json", json); });
+
+  server.on("/get_base_distance", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] GET /get_base_distance aufgerufen.");
+float baseDistance = getBaseDistance();
+String json = "{\"baseDistance\":" + String(baseDistance, 1) + "}";
+request->send(200, "application/json", json); });
+
+  server.on("/set_threshold", HTTP_POST, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] POST /set_threshold aufgerufen.");
+if (request->hasParam("threshold", true)) {
+  float threshold = request->getParam("threshold", true)->value().toFloat();
+  setSensorThreshold(threshold);
+  String msg = "Schwelle gesetzt auf " + String(threshold, 1) + " cm";
+  request->send(200, "text/plain", msg);
+} else {
+  request->send(400, "text/plain", "Fehlender Threshold-Parameter");
+} });
 
   server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *request)
             {
