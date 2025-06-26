@@ -66,6 +66,7 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
         Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
         addDiscoveredDevice(senderMac, senderRole);
     }
+    broadcastDiscoveredDevices();
     printDeviceLists();
 }
 

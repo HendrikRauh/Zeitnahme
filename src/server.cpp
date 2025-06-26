@@ -28,16 +28,6 @@ void broadcastLichtschrankeStatus(LichtschrankeStatus status)
   wsBrodcastMessage("{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}");
 }
 
-void notifyDiscoveredDevicesChanged()
-{
-  broadcastDiscoveredDevices();
-}
-
-void onDeviceDiscoveryFinished()
-{
-  notifyDiscoveredDevicesChanged();
-}
-
 // Passe die WebSocket-Init an:
 void initWebsocket()
 {
@@ -510,8 +500,10 @@ request->send(200, "text/html", generateMainPage(getLastTime())); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-Serial.println("[WEB] GET /config aufgerufen.");
-request->send(200, "text/html", generateConfigPage()); });
+      loadDeviceListFromPreferences();
+      searchForDevices();              
+      Serial.println("[WEB] GET /config aufgerufen.");
+      request->send(200, "text/html", generateConfigPage()); });
 
   server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request)
             {

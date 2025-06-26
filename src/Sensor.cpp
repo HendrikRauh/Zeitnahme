@@ -3,7 +3,7 @@
 
 constexpr uint8_t TRIG_PIN = 12;
 constexpr uint8_t ECHO_PIN = 13;
-constexpr float THRESHOLD_CM = 10.0f;
+constexpr float THRESHOLD_CM = 50.0f;
 
 EasyUltrasonic ultrasonic;
 
@@ -19,15 +19,21 @@ MeasureResult measure()
 {
     MeasureResult res;
     res.time = millis();
-    res.triggered = (fabs(ultrasonic.getDistanceCM() - baseDistance) >= THRESHOLD_CM);
+    float dist = ultrasonic.getDistanceCM();
+    // res.triggered = (fabs(ultrasonic.getDistanceCM() - baseDistance) >= THRESHOLD_CM);
+    res.triggered = (fabs(dist - baseDistance) >= THRESHOLD_CM);
+    Serial.printf("Dist: %f, %d\n", dist, res.triggered);
     return res;
 }
 
 float calibrateSensor()
 {
     Serial.println("[SENSOR_DEBUG] Kalibriere Sensor...");
-    delay(1000);
     baseDistance = ultrasonic.getDistanceCM();
+    if (baseDistance == 0)
+    {
+        baseDistance = 400;
+    }
     Serial.printf("[SENSOR_DEBUG] Kalibrierung abgeschlossen. Basisdistanz: %.2f cm\n", baseDistance);
     return baseDistance;
 }
