@@ -72,6 +72,7 @@ String generateMainPage(unsigned long lastTime)
           flex-direction: column;
           justify-content: center;
           align-items: center;
+          background: #f8f8f8;
         }
         #zeit {
           font-size: 10vw;
@@ -180,6 +181,7 @@ String generateConfigPage()
           flex-direction: column;
           align-items: center;
           font-family: system-ui, sans-serif;
+          background: #f8f8f8;
         }
         h1 {
           font-size: 2em;
@@ -313,45 +315,89 @@ String generateConfigPage()
         .sensor-button.changed:hover {
           background: #1976d2 !important;
         }
-        .table-container {
-          width: fit-content;
-          max-width: 100%;
-          overflow-x: auto;
-          margin: 0 auto 1.5em auto;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
+        .devices-container {
           background: #fff;
           border-radius: 10px;
-          overflow: hidden;
-          font-size: 1em;
+          padding: 1.5em;
+          margin: 1em auto;
           box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+          max-width: 600px;
+          width: fit-content;
+          min-width: 300px;
         }
-        th, td {
-          padding: 0.7em 0.5em;
-          text-align: center;
+        .device-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 1.2em;
         }
-        th {
-          background: #f0f0f0;
+        .device-item {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 1em;
+          align-items: center;
+          padding: 1em;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border-left: 4px solid #ddd;
+          transition: all 0.3s ease;
+        }
+        .device-item.self {
+          border-left-color: #2196f3;
+          background: #f0f8ff;
+        }
+        .device-item.saved-online {
+          border-left-color: #43a047;
+        }
+        .device-item.saved-offline {
+          border-left-color: #e53935;
+        }
+        .device-item.discovered {
+          border-left-color: #ffc107;
+        }
+        .device-info {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .device-mac {
+          font-family: monospace;
+          font-size: 1.1em;
           font-weight: 600;
+          margin-bottom: 0.3em;
+          color: #333;
+          word-break: break-all;
         }
-        tr:nth-child(even) {
-          background: #fafafa;
+        .device-status {
+          font-size: 0.9em;
+          color: #666;
+          display: flex;
+          align-items: center;
+          gap: 0.5em;
         }
-        select, button {
-          font-size: 1em;
-          padding: 0.3em 0.7em;
+        .device-status-icon {
+          font-size: 1.1em;
+        }
+        .device-role-select {
+          min-width: 120px;
+          padding: 0.6em 0.8em;
+          border: 1px solid #ccc;
           border-radius: 6px;
-          border: 1px solid #bbb;
-          background: #f9f9f9;
-        }
-        button {
+          background: #fff;
+          font-size: 1em;
           cursor: pointer;
-          transition: background 0.2s;
+          transition: all 0.2s ease;
         }
-        button:active, button:hover {
-          background: #eee;
+        .device-role-select:hover {
+          border-color: #2196f3;
+        }
+        .device-role-select:focus {
+          outline: none;
+          border-color: #2196f3;
+          box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+        .device-role-select.pending {
+          background: #fff3cd;
+          border-color: #ffc107;
         }
         #resetBtn {
           color: #e53935;
@@ -385,7 +431,6 @@ String generateConfigPage()
           h1 { font-size: 1.3em; }
           .status-row { font-size: 1em; }
           #statusEmoji { font-size: 1.5em; }
-          table { font-size: 0.95em; }
           #home-btn {
             width: 56px;
             height: 56px;
@@ -393,7 +438,7 @@ String generateConfigPage()
             right: 4vw;
             bottom: 4vw;
           }
-          .threshold-container {
+          .threshold-container, .devices-container {
             padding: 1em;
             margin: 1em 0.5em;
             width: fit-content;
@@ -428,10 +473,22 @@ String generateConfigPage()
             padding: 0.6em 0.5em;
             max-width: 100px;
           }
+          .device-item {
+            grid-template-columns: 1fr;
+            gap: 0.8em;
+            text-align: center;
+          }
+          .device-info {
+            text-align: left;
+          }
+          .device-role-select {
+            width: 100%;
+            min-width: 100px;
+          }
         }
         
         @media (max-width: 400px) {
-          .threshold-container {
+          .threshold-container, .devices-container {
             margin: 0.5em 0.25em;
             padding: 0.8em;
             min-width: 250px;
@@ -450,6 +507,12 @@ String generateConfigPage()
           }
           .sensor-input input {
             max-width: 80px;
+          }
+          .device-grid {
+            gap: 1em;
+          }
+          .device-item {
+            padding: 0.8em;
           }
         }
       </style>
@@ -481,13 +544,11 @@ String generateConfigPage()
         </div>
         
       </div>
-      <div class="table-container">
-        <table id="devicesTable">
-          <thead>
-            <tr><th>MAC</th><th>Rolle</th><th>Aktion</th></tr>
-          </thead>
-          <tbody id="devicesBody"></tbody>
-        </table>
+      <div class="devices-container">
+        <h3 style="margin-top: 0; margin-bottom: 1.5em;">ESP-Geräte</h3>
+        <div class="device-grid" id="devicesContainer">
+          <!-- Geräte werden hier dynamisch eingefügt -->
+        </div>
       </div>
       <button id="resetBtn">Alle Einstellungen löschen</button>
       <button id="home-btn" onclick="window.location.href='/'" aria-label="Zur Hauptseite">🏠</button>
@@ -686,48 +747,123 @@ String generateConfigPage()
         }
 
         function showAllDevices() {
-          let tbody = document.getElementById('devicesBody');
-          tbody.innerHTML = '';
+          let container = document.getElementById('devicesContainer');
+          container.innerHTML = '';
 
           // Eigenes Gerät immer zuerst
           let selfDev = {mac: selfMac, role: selfRole};
           let otherDevs = getAllDevices().filter(d => d.mac !== selfMac);
 
-          // Eigene Zeile
-          let tr = document.createElement('tr');
-          tr.dataset.mac = selfDev.mac;
-          let roleOptions = ['Start','Ziel'].map(opt =>
-            `<option value="${opt}"${(selfDev.role||"Start")===opt?' selected':''}>${opt}</option>`
-          ).join('');
-          tr.innerHTML =
-            `<td><span style="color:none;font-weight:bold">${selfDev.mac}</span></td>
-             <td><select>${roleOptions}</select></td>
-             <td><button onclick="saveDeviceRow(this)">Speichern</button></td>`;
-          tbody.appendChild(tr);
+          // Eigenes Gerät
+          createDeviceItem(container, selfDev, true);
 
           // Andere Geräte
           otherDevs.forEach(dev => {
-            let saved = savedDevices.find(d => d.mac === dev.mac);
-            let role = saved ? saved.role : "-";
-            let isSaved = !!saved;
-            let isOnline = discoveredDevices.some(d => d.mac === dev.mac);
-
-            let macColor = "black";
-            if (isSaved && isOnline) macColor = "#43a047";
-            else if (isSaved && !isOnline) macColor = "#e53935";
-            else if (!isSaved && isOnline) macColor = "#888";
-
-            let roleOptions = ['-','Start','Ziel'].map(opt =>
-              `<option value="${opt}"${role===opt?' selected':''}>${opt}</option>`
-            ).join('');
-            let tr = document.createElement('tr');
-            tr.dataset.mac = dev.mac;
-            tr.innerHTML =
-              `<td><span style="color:${macColor};font-weight:bold">${dev.mac}</span></td>
-               <td><select>${roleOptions}</select></td>
-               <td><button onclick="saveDeviceRow(this)">Speichern</button></td>`;
-            tbody.appendChild(tr);
+            createDeviceItem(container, dev, false);
           });
+        }
+
+        function createDeviceItem(container, dev, isSelf) {
+          let saved = savedDevices.find(d => d.mac === dev.mac);
+          let role = saved ? saved.role : (isSelf ? dev.role : "-");
+          let isSaved = !!saved || isSelf;
+          let isOnline = discoveredDevices.some(d => d.mac === dev.mac) || isSelf;
+
+          let deviceClass = "device-item";
+          let statusIcon = "";
+          let statusText = "";
+          
+          if (isSelf) {
+            deviceClass += " self";
+            statusIcon = "📱";
+            statusText = "Dieses Gerät";
+          } else if (isSaved && isOnline) {
+            deviceClass += " saved-online";
+            statusIcon = "🟢";
+            statusText = "Gespeichert & Online";
+          } else if (isSaved && !isOnline) {
+            deviceClass += " saved-offline";
+            statusIcon = "🔴";
+            statusText = "Gespeichert & Offline";
+          } else if (!isSaved && isOnline) {
+            deviceClass += " discovered";
+            statusIcon = "🟡";
+            statusText = "Entdeckt";
+          } else {
+            statusIcon = "⚪";
+            statusText = "Unbekannt";
+          }
+
+          let roleOptions = (isSelf ? ['Start','Ziel'] : ['-','Start','Ziel']).map(opt =>
+            `<option value="${opt}"${role===opt?' selected':''}>${opt}</option>`
+          ).join('');
+
+          let deviceItem = document.createElement('div');
+          deviceItem.className = deviceClass;
+          deviceItem.dataset.mac = dev.mac;
+          deviceItem.innerHTML = `
+            <div class="device-info">
+              <div class="device-mac">${dev.mac}</div>
+              <div class="device-status">
+                <span class="device-status-icon">${statusIcon}</span>
+                <span>${statusText}</span>
+              </div>
+            </div>
+            <select class="device-role-select" onchange="saveDeviceRole(this, '${dev.mac}', ${isSelf})">${roleOptions}</select>
+          `;
+          container.appendChild(deviceItem);
+        }
+
+        function saveDeviceRole(selectElement, mac, isSelf) {
+          let role = selectElement.value;
+          
+          // Visueller Feedback während des Speicherns
+          selectElement.classList.add('pending');
+          selectElement.disabled = true;
+          
+          if (isSelf) {
+            // Eigene Rolle ändern
+            fetch('/config', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+              body: 'role=' + encodeURIComponent(role)
+            }).then(response => {
+              if (response.ok) {
+                // Erfolg - Seite neu laden nach kurzer Verzögerung
+                setTimeout(() => {
+                  location.reload();
+                }, 500);
+              } else {
+                // Fehler - Zurücksetzen
+                selectElement.classList.remove('pending');
+                selectElement.disabled = false;
+                alert('Fehler beim Speichern der Rolle');
+              }
+            }).catch(() => {
+              selectElement.classList.remove('pending');
+              selectElement.disabled = false;
+              alert('Fehler beim Speichern der Rolle');
+            });
+          } else {
+            fetch('/change_device', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+              body: 'mac=' + encodeURIComponent(mac) + '&role=' + encodeURIComponent(role)
+            }).then(response => {
+              selectElement.classList.remove('pending');
+              selectElement.disabled = false;
+              if (response.ok) {
+                // Erfolg - Update der Anzeige
+                showAllDevices();
+              } else {
+                alert('Fehler beim Speichern des Geräts');
+              }
+            }).catch(() => {
+              selectElement.classList.remove('pending');
+              selectElement.disabled = false;
+              alert('Fehler beim Speichern des Geräts');
+            });
+          }
         }
         showAllDevices();
 
@@ -738,32 +874,6 @@ String generateConfigPage()
 
         function discoverDevices() {
           fetch('/discover', {method: 'POST'});
-        }
-
-        function saveDeviceRow(btn) {
-          let tr = btn.closest('tr');
-          let mac = tr.dataset.mac;
-          let role = tr.querySelector('select').value;
-          if (mac === selfMac) {
-            // Eigene Rolle ändern
-            fetch('/config', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-              body: 'role=' + encodeURIComponent(role)
-            }).then(() => {
-              alert('Rolle geändert!');
-              location.reload();
-            });
-          } else {
-            fetch('/change_device', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-              body: 'mac=' + encodeURIComponent(mac) + '&role=' + encodeURIComponent(role)
-            }).then(() => {
-              alert('Gerät gespeichert!');
-              location.reload();
-            });
-          }
         }
 
         document.getElementById('resetBtn').onclick = function() {
