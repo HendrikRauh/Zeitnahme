@@ -264,8 +264,9 @@ String generateConfigPage()
           min-width: 30px;
         }
         .sensor-button {
-          width: 100%;
+          width: 200px;
           max-width: 200px;
+          min-width: 200px;
           background: #2196f3;
           color: white;
           border: 1px solid #1976d2;
@@ -275,6 +276,7 @@ String generateConfigPage()
           font-size: 1em;
           font-weight: 600;
           transition: all 0.3s ease;
+          box-sizing: border-box;
         }
         .sensor-button:hover {
           background: #1976d2;
@@ -415,9 +417,12 @@ String generateConfigPage()
             padding: 0.4em;
           }
           .sensor-button {
+            width: 100%;
+            max-width: none;
+            min-width: 160px;
             padding: 0.7em 1em;
             font-size: 0.95em;
-            max-width: none;
+            box-sizing: border-box;
           }
           .sensor-input input {
             padding: 0.6em 0.5em;
@@ -436,8 +441,12 @@ String generateConfigPage()
             gap: 1em;
           }
           .sensor-button {
+            width: 100%;
+            max-width: none;
+            min-width: 140px;
             padding: 0.8em 0.5em;
             font-size: 0.9em;
+            box-sizing: border-box;
           }
           .sensor-input input {
             max-width: 80px;
