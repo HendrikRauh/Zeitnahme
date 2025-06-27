@@ -2,6 +2,7 @@
 #define SENSOR_H
 
 constexpr unsigned long COOLDOWN_MS = 3000;
+constexpr float MAX_DISTANCE_CM = 400.0f; // Maximalwert des Ultraschallsensors
 
 struct MeasureResult
 {
@@ -28,5 +29,7 @@ void updateThresholdCache();
 float getCurrentThreshold();
 
 float getBaseDistance();
+
+bool isBaseDistanceMaxRange();
 
 #endif

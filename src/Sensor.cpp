@@ -27,7 +27,7 @@ MeasureResult measure()
     float dist = ultrasonic.getDistanceCM();
     if (dist == 0)
     {
-        dist = 400;
+        dist = MAX_DISTANCE_CM;
     }
 
     // res.triggered = (fabs(ultrasonic.getDistanceCM() - baseDistance) >= THRESHOLD_CM);
@@ -42,7 +42,7 @@ float calibrateSensor()
     baseDistance = ultrasonic.getDistanceCM();
     if (baseDistance == 0)
     {
-        baseDistance = 400;
+        baseDistance = MAX_DISTANCE_CM;
     }
     Serial.printf("[SENSOR_DEBUG] Kalibrierung abgeschlossen. Basisdistanz: %.2f cm\n", baseDistance);
     return baseDistance;
@@ -62,4 +62,9 @@ float getCurrentThreshold()
 float getBaseDistance()
 {
     return baseDistance;
+}
+
+bool isBaseDistanceMaxRange()
+{
+    return baseDistance >= MAX_DISTANCE_CM;
 }

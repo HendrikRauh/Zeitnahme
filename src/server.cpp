@@ -581,7 +581,16 @@ String generateConfigPage()
           fetch('/get_base_distance')
             .then(response => response.json())
             .then(data => {
-              document.getElementById('baseDistanceValue').textContent = data.baseDistance.toFixed(1) + ' cm';
+              const baseDistanceElement = document.getElementById('baseDistanceValue');
+              if (data.isMaxRange) {
+                baseDistanceElement.textContent = 'Kein Hindernis';
+                baseDistanceElement.style.color = '#888';
+                baseDistanceElement.style.fontStyle = 'italic';
+              } else {
+                baseDistanceElement.textContent = data.baseDistance.toFixed(1) + ' cm';
+                baseDistanceElement.style.color = '';
+                baseDistanceElement.style.fontStyle = '';
+              }
             })
             .catch(err => console.log('Fehler beim Laden der Basisdistanz:', err));
         }
@@ -858,7 +867,8 @@ request->send(200, "application/json", json); });
             {
 Serial.println("[WEB] GET /get_base_distance aufgerufen.");
 float baseDistance = getBaseDistance();
-String json = "{\"baseDistance\":" + String(baseDistance, 1) + "}";
+bool isMaxRange = isBaseDistanceMaxRange();
+String json = "{\"baseDistance\":" + String(baseDistance, 1) + ",\"isMaxRange\":" + (isMaxRange ? "true" : "false") + "}";
 request->send(200, "application/json", json); });
 
   server.on("/set_threshold", HTTP_POST, [](AsyncWebServerRequest *request)
