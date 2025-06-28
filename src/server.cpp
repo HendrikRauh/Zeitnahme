@@ -61,13 +61,13 @@ void initWebpage()
   Serial.println("[WEB] LittleFS mounted successfully");
 
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP("⏱️" + macToString(getMacAddress()), "", ESP_NOW_CHANNEL);
+  WiFi.softAP("⏱️ " + macToShortString(getMacAddress()), "", ESP_NOW_CHANNEL);
 
   // API-Endpunkte für dynamische Daten (WICHTIG: Vor serveStatic definieren!)
   server.on("/api/device_info", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     String json = "{";
-    json += "\"selfMac\":\"" + macToString(getMacAddress()) + "\",";
+    json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
     json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\"";
     json += "}";
     request->send(200, "application/json", json); });
@@ -106,11 +106,17 @@ request->send(200, "text/plain", "OK"); });
             {
 Serial.println("[WEB] POST /change_device aufgerufen (Änderung/Entfernung eines anderen Geräts).");
 if (request->hasParam("mac", true) && request->hasParam("role", true)) {
-String macStr = request->getParam("mac", true)->value();
+String shortMacStr = request->getParam("mac", true)->value();
 String roleStr = request->getParam("role", true)->value();
 uint8_t mac[6];
-sscanf(macStr.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
- &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+
+// Konvertiere verkürzte MAC zu vollständiger MAC
+if (!findFullMacFromShortMac(shortMacStr, mac)) {
+  Serial.printf("[WEB] Gerät mit verkürzter MAC %s nicht gefunden.\n", shortMacStr.c_str());
+  request->send(400, "text/plain", "Gerät nicht gefunden");
+  return;
+}
+
 Role role = stringToRole(roleStr);
 
 if (memcmp(mac, getMacAddress(), 6) == 0) {

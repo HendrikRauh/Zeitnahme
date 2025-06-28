@@ -10,6 +10,8 @@ String roleToString(Role role);
 Role stringToRole(const String &text);
 String statusToString(LichtschrankeStatus status);
 String macToString(const uint8_t *mac);
+String macToShortString(const uint8_t *mac);
+bool findFullMacFromShortMac(const String &shortMac, uint8_t fullMac[6]);
 void handleIdentityMessage(const uint8_t *senderMac, Role senderRole);
 void printDeviceLists();
 
