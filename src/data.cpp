@@ -223,32 +223,60 @@ void clearDiscoveredDevices()
     discoveredDevices.clear();
 }
 
-// Sensor Threshold Funktionen
-constexpr float DEFAULT_THRESHOLD_CM = 50.0f;
+// Sensor Distance Settings Funktionen
+constexpr float DEFAULT_MIN_DISTANCE_CM = 2.0f;
+constexpr float DEFAULT_MAX_DISTANCE_CM = 100.0f;
 
-float getSensorThreshold()
+float getMinDistance()
 {
     preferences.begin("lichtschranke", true);
-    float threshold = preferences.getFloat("threshold", DEFAULT_THRESHOLD_CM);
+    float minDistance = preferences.getFloat("minDistance", DEFAULT_MIN_DISTANCE_CM);
     preferences.end();
-    Serial.printf("[THRESHOLD_DEBUG] Threshold geladen: %.2f cm\n", threshold);
-    return threshold;
+    Serial.printf("[DISTANCE_DEBUG] Min-Distanz geladen: %.2f cm\n", minDistance);
+    return minDistance;
 }
 
-void setSensorThreshold(float threshold)
+float getMaxDistance()
 {
-    if (threshold <= 0 || threshold > 200)
+    preferences.begin("lichtschranke", true);
+    float maxDistance = preferences.getFloat("maxDistance", DEFAULT_MAX_DISTANCE_CM);
+    preferences.end();
+    Serial.printf("[DISTANCE_DEBUG] Max-Distanz geladen: %.2f cm\n", maxDistance);
+    return maxDistance;
+}
+
+void setMinDistance(float minDistance)
+{
+    if (minDistance < 2 || minDistance > 200)
     {
-        Serial.printf("[THRESHOLD_DEBUG] Ungültiger Threshold-Wert: %.2f cm. Verwende Default (%.2f cm).\n", threshold, DEFAULT_THRESHOLD_CM);
-        threshold = DEFAULT_THRESHOLD_CM;
+        Serial.printf("[DISTANCE_DEBUG] Ungültiger Min-Distanz-Wert: %.2f cm. Verwende Default (%.2f cm).\n", minDistance, DEFAULT_MIN_DISTANCE_CM);
+        minDistance = DEFAULT_MIN_DISTANCE_CM;
     }
 
     preferences.begin("lichtschranke", false);
-    preferences.putFloat("threshold", threshold);
+    preferences.putFloat("minDistance", minDistance);
     preferences.end();
 
-    Serial.printf("[THRESHOLD_DEBUG] Threshold gesetzt auf: %.2f cm\n", threshold);
+    Serial.printf("[DISTANCE_DEBUG] Min-Distanz gesetzt auf: %.2f cm\n", minDistance);
 
     // Aktualisiere den Cache im Sensor-Modul für bessere Performance
-    updateThresholdCache();
+    updateDistanceCache();
+}
+
+void setMaxDistance(float maxDistance)
+{
+    if (maxDistance < 2 || maxDistance > 200)
+    {
+        Serial.printf("[DISTANCE_DEBUG] Ungültiger Max-Distanz-Wert: %.2f cm. Verwende Default (%.2f cm).\n", maxDistance, DEFAULT_MAX_DISTANCE_CM);
+        maxDistance = DEFAULT_MAX_DISTANCE_CM;
+    }
+
+    preferences.begin("lichtschranke", false);
+    preferences.putFloat("maxDistance", maxDistance);
+    preferences.end();
+
+    Serial.printf("[DISTANCE_DEBUG] Max-Distanz gesetzt auf: %.2f cm\n", maxDistance);
+
+    // Aktualisiere den Cache im Sensor-Modul für bessere Performance
+    updateDistanceCache();
 }

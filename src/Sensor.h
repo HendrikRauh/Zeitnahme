@@ -18,18 +18,14 @@ enum LichtschrankeStatus
     STATUS_TRIGGERED_IN_COOLDOWN
 };
 
-float calibrateSensor();
-
 void initSensor();
 
 MeasureResult measure();
 
-void updateThresholdCache();
+void updateDistanceCache();
 
-float getCurrentThreshold();
+float getCurrentMinDistance();
 
-float getBaseDistance();
-
-bool isBaseDistanceMaxRange();
+float getCurrentMaxDistance();
 
 #endif
