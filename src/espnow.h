@@ -8,6 +8,8 @@
 #include <data.h>
 #include <server.h>
 
+#define ESP_NOW_CHANNEL 8
+
 struct SaveDeviceMessage
 {
     uint8_t targetMac[6];

@@ -53,28 +53,29 @@ void initWebsocket()
 void initWebpage()
 {
   // LittleFS initialisieren
-  if (!LittleFS.begin(true)) {
+  if (!LittleFS.begin(true))
+  {
     Serial.println("[WEB] LittleFS Mount Failed!");
     return;
   }
   Serial.println("[WEB] LittleFS mounted successfully");
 
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP("⏱️" + macToString(getMacAddress()), "", 5);
+  WiFi.softAP("⏱️" + macToString(getMacAddress()), "", ESP_NOW_CHANNEL);
 
   // API-Endpunkte für dynamische Daten (WICHTIG: Vor serveStatic definieren!)
-  server.on("/api/device_info", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/api/device_info", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     String json = "{";
     json += "\"selfMac\":\"" + macToString(getMacAddress()) + "\",";
     json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\"";
     json += "}";
-    request->send(200, "application/json", json);
-  });
+    request->send(200, "application/json", json); });
 
-  server.on("/api/last_time", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/api/last_time", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     String json = "{\"lastTime\":" + String(getLastTime()) + "}";
-    request->send(200, "application/json", json);
-  });
+    request->send(200, "application/json", json); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
             {
@@ -199,40 +200,40 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
   request->send(400, "text/plain", "Fehlende Parameter");
 } });
   server.addHandler(&ws);
-  
+
   // Statische Dateien über LittleFS bereitstellen (WICHTIG: Nach allen API-Routen!)
   // Spezifische Dateien explizit mappen mit korrekten Compression-Headern
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(response); });
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/style.css.gz", "text/css");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  server.on("/app.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(response); });
+  server.on("/app.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/app.js.gz", "application/javascript");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  server.on("/config.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(response); });
+  server.on("/config.css", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.css.gz", "text/css");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  server.on("/config.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(response); });
+  server.on("/config.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.js.gz", "application/javascript");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(response); });
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/favicon.ico.gz", "image/x-icon");
     response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-  
+    request->send(response); });
+
   server.begin();
   Serial.println("[WEB] Webserver gestartet.");
 }

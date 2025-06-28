@@ -61,7 +61,7 @@ void sendIdentity(const uint8_t *dest)
 
     esp_now_peer_info_t peerInfo = {}; // Ziel ist meine eigene MAC (da ich meine Identität sende)
     memcpy(peerInfo.peer_addr, dest, 6);
-    peerInfo.channel = 5; // Verwende denselben Kanal wie AP
+    peerInfo.channel = ESP_NOW_CHANNEL;
     peerInfo.encrypt = false;
     if (!esp_now_is_peer_exist(dest))
     {
@@ -101,7 +101,7 @@ bool tellOtherDeviceToChangeHisRole(const uint8_t *targetMac, Role newRole)
     esp_now_peer_info_t peerInfo = {};
 
     memcpy(peerInfo.peer_addr, targetMac, 6);
-    peerInfo.channel = 5; // Verwende denselben Kanal wie AP
+    peerInfo.channel = ESP_NOW_CHANNEL;
     peerInfo.encrypt = false;
     if (!esp_now_is_peer_exist(targetMac))
     {
@@ -142,7 +142,7 @@ void sendGoodBye(const uint8_t *mac)
 
     esp_now_peer_info_t peerInfo = {}; // Ziel ist meine eigene MAC (da ich meine Identität sende)
     memcpy(peerInfo.peer_addr, mac, 6);
-    peerInfo.channel = 5; // Verwende denselben Kanal wie AP
+    peerInfo.channel = ESP_NOW_CHANNEL;
     peerInfo.encrypt = false;
     esp_now_add_peer(&peerInfo);
 
@@ -169,7 +169,7 @@ void addDeviceToPeer(const uint8_t *mac)
     esp_now_peer_info_t peerInfo = {};
 
     memcpy(peerInfo.peer_addr, mac, 6);
-    peerInfo.channel = 5;
+    peerInfo.channel = ESP_NOW_CHANNEL;
     peerInfo.encrypt = false;
     if (!esp_now_is_peer_exist(mac))
     {
