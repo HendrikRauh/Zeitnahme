@@ -92,22 +92,46 @@ String statusToString(LichtschrankeStatus status)
 void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
 {
     Serial.printf("[ROLE_DEBUG] Identity empfangen von MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
+
+    bool hasChanges = false;
+
     if (checkIfDeviceIsSaved(senderMac))
     {
-        Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt, ändere die Rolle im Speicher zu %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
-        changeSavedDevice(senderMac, senderRole);
+        // Prüfe, ob sich die Rolle geändert hat
+        for (const auto &dev : getSavedDevices())
+        {
+            if (memcmp(dev.mac, senderMac, 6) == 0)
+            {
+                if (dev.role != senderRole)
+                {
+                    Serial.printf("[ROLE_DEBUG] Rolle von Gerät %s hat sich geändert: %s -> %s\n",
+                                  macToString(senderMac).c_str(), roleToString(dev.role).c_str(), roleToString(senderRole));
+                    changeSavedDevice(senderMac, senderRole);
+                    hasChanges = true;
+                }
+                else
+                {
+                    Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt mit korrekter Rolle %s\n",
+                                  macToString(senderMac).c_str(), roleToString(senderRole));
+                }
+                break;
+            }
+        }
     }
-    if (checkIfDeviceIsDiscoveredList(senderMac))
-    {
-        Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits in den gefundenen Geräten\n", macToString(senderMac).c_str());
-    }
-    else
+
+    if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
         Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
         addDiscoveredDevice(senderMac, senderRole);
+        hasChanges = true;
     }
-    broadcastDiscoveredDevices();
-    printDeviceLists();
+
+    // Nur broadcasten wenn es tatsächlich Änderungen gab
+    if (hasChanges)
+    {
+        broadcastDiscoveredDevices();
+        printDeviceLists();
+    }
 }
 
 void printDeviceLists()
