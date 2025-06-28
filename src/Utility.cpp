@@ -32,6 +32,46 @@ String macToString(const uint8_t *mac)
     return String(buf);
 }
 
+String macToShortString(const uint8_t *mac)
+{
+    char buf[9];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X",
+             mac[3], mac[4], mac[5]);
+    return String(buf);
+}
+
+bool findFullMacFromShortMac(const String &shortMac, uint8_t fullMac[6])
+{
+    // Suche in gespeicherten Geräten
+    for (const auto &dev : getSavedDevices())
+    {
+        if (macToShortString(dev.mac) == shortMac)
+        {
+            memcpy(fullMac, dev.mac, 6);
+            return true;
+        }
+    }
+
+    // Suche in entdeckten Geräten
+    for (const auto &dev : getDiscoveredDevices())
+    {
+        if (macToShortString(dev.mac) == shortMac)
+        {
+            memcpy(fullMac, dev.mac, 6);
+            return true;
+        }
+    }
+
+    // Prüfe eigene MAC-Adresse
+    if (macToShortString(getMacAddress()) == shortMac)
+    {
+        memcpy(fullMac, getMacAddress(), 6);
+        return true;
+    }
+
+    return false;
+}
+
 String statusToString(LichtschrankeStatus status)
 {
     switch (status)
@@ -102,7 +142,7 @@ String getSavedDevicesJson()
     {
         JsonObject obj = arr.createNestedObject();
 
-        obj["mac"] = macToString(dev.mac);
+        obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);
     }
 
@@ -122,7 +162,7 @@ String getDiscoveredDevicesJson()
     {
         JsonObject obj = arr.createNestedObject();
 
-        obj["mac"] = macToString(dev.mac);
+        obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);
     }
 
