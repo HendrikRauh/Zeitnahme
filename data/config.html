@@ -18,31 +18,48 @@
 
             <div class="sensor-grid">
                 <div class="sensor-item">
-                    <div class="sensor-label">Basisdistanz</div>
-                    <div class="sensor-value" id="baseDistanceValue">-- cm</div>
-                    <button class="sensor-button" id="recalibrateBtn">
-                        Rekalibrieren
+                    <div class="sensor-label">Minimal-Distanz</div>
+                    <div class="sensor-input">
+                        <input
+                            type="number"
+                            id="minDistanceInput"
+                            min="2"
+                            max="200"
+                            step="0.1"
+                            value="2.0"
+                            placeholder="2.0"
+                        />
+                        <span>cm</span>
+                    </div>
+                    <button class="sensor-button" id="saveMinDistanceBtn">
+                        Speichern
                     </button>
                 </div>
 
                 <div class="sensor-item">
-                    <div class="sensor-label">Auslöseschwelle</div>
+                    <div class="sensor-label">Maximal-Distanz</div>
                     <div class="sensor-input">
                         <input
                             type="number"
-                            id="thresholdInput"
-                            min="1"
+                            id="maxDistanceInput"
+                            min="2"
                             max="200"
                             step="0.1"
-                            value="50.0"
-                            placeholder="50.0"
+                            value="100.0"
+                            placeholder="100.0"
                         />
                         <span>cm</span>
                     </div>
-                    <button class="sensor-button" id="saveThresholdBtn">
-                        Schwelle speichern
+                    <button class="sensor-button" id="saveMaxDistanceBtn">
+                        Speichern
                     </button>
                 </div>
+            </div>
+            <div class="distance-info">
+                <small
+                    >Auslösung erfolgt, wenn die gemessene Distanz zwischen Min-
+                    und Max-Wert liegt.</small
+                >
             </div>
         </div>
         <div class="devices-container">

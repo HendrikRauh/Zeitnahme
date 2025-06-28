@@ -151,37 +151,36 @@ request->send(400, "text/plain", "Missing MAC or role");
     String msg = "S: "+getSavedDevicesJson()+"\nD: "+getDiscoveredDevicesJson()+"\nR: "+roleToString(getOwnRole());
     request->send(200, "application/json", msg); });
 
-  server.on("/recalibrate", HTTP_POST, [](AsyncWebServerRequest *request)
+  server.on("/get_distance_settings", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-Serial.println("[WEB] POST /recalibrate aufgerufen. Starte Rekalibrierung.");
-String msg = "Rekalibriert! Neue Distanz: " + String(calibrateSensor(), 2) + " cm";
-request->send(200, "text/plain", msg); });
-
-  server.on("/get_threshold", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-Serial.println("[WEB] GET /get_threshold aufgerufen.");
-float threshold = getSensorThreshold();
-String json = "{\"threshold\":" + String(threshold, 1) + "}";
+Serial.println("[WEB] GET /get_distance_settings aufgerufen.");
+float minDistance = getMinDistance();
+float maxDistance = getMaxDistance();
+String json = "{\"minDistance\":" + String(minDistance, 1) + ",\"maxDistance\":" + String(maxDistance, 1) + "}";
 request->send(200, "application/json", json); });
 
-  server.on("/get_base_distance", HTTP_GET, [](AsyncWebServerRequest *request)
+  server.on("/set_min_distance", HTTP_POST, [](AsyncWebServerRequest *request)
             {
-Serial.println("[WEB] GET /get_base_distance aufgerufen.");
-float baseDistance = getBaseDistance();
-bool isMaxRange = isBaseDistanceMaxRange();
-String json = "{\"baseDistance\":" + String(baseDistance, 1) + ",\"isMaxRange\":" + (isMaxRange ? "true" : "false") + "}";
-request->send(200, "application/json", json); });
-
-  server.on("/set_threshold", HTTP_POST, [](AsyncWebServerRequest *request)
-            {
-Serial.println("[WEB] POST /set_threshold aufgerufen.");
-if (request->hasParam("threshold", true)) {
-  float threshold = request->getParam("threshold", true)->value().toFloat();
-  setSensorThreshold(threshold);
-  String msg = "Schwelle gesetzt auf " + String(threshold, 1) + " cm";
+Serial.println("[WEB] POST /set_min_distance aufgerufen.");
+if (request->hasParam("minDistance", true)) {
+  float minDistance = request->getParam("minDistance", true)->value().toFloat();
+  setMinDistance(minDistance);
+  String msg = "Min-Distanz gesetzt auf " + String(minDistance, 1) + " cm";
   request->send(200, "text/plain", msg);
 } else {
-  request->send(400, "text/plain", "Fehlender Threshold-Parameter");
+  request->send(400, "text/plain", "Fehlender Min-Distanz-Parameter");
+} });
+
+  server.on("/set_max_distance", HTTP_POST, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] POST /set_max_distance aufgerufen.");
+if (request->hasParam("maxDistance", true)) {
+  float maxDistance = request->getParam("maxDistance", true)->value().toFloat();
+  setMaxDistance(maxDistance);
+  String msg = "Max-Distanz gesetzt auf " + String(maxDistance, 1) + " cm";
+  request->send(200, "text/plain", msg);
+} else {
+  request->send(400, "text/plain", "Fehlender Max-Distanz-Parameter");
 } });
 
   server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *request)

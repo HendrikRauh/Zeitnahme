@@ -5,20 +5,21 @@
 constexpr uint8_t TRIG_PIN = 12;
 constexpr uint8_t ECHO_PIN = 13;
 
-float baseDistance;
-float cachedThreshold = 50.0f; // Cache für bessere Performance
+float cachedMinDistance = 2.0f;   // Cache für bessere Performance
+float cachedMaxDistance = 100.0f; // Cache für bessere Performance
 
 // Einfache Ultraschall-Messung ohne externe Bibliothek
-float getDistanceCM() {
+float getDistanceCM()
+{
     digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
     digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
-    
+
     long duration = pulseIn(ECHO_PIN, HIGH);
     float distance = (duration * 0.034) / 2; // Schallgeschwindigkeit: 340 m/s
-    
+
     return distance > 0 ? distance : MAX_DISTANCE_CM;
 }
 
@@ -27,10 +28,8 @@ void initSensor()
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
 
-    // Lade Threshold-Wert in Cache für bessere Performance
-    cachedThreshold = getSensorThreshold();
-
-    calibrateSensor();
+    // Lade Distanz-Werte in Cache für bessere Performance
+    updateDistanceCache();
 }
 
 MeasureResult measure()
@@ -43,41 +42,25 @@ MeasureResult measure()
         dist = MAX_DISTANCE_CM;
     }
 
-    // res.triggered = (fabs(dist - baseDistance) >= cachedThreshold);
-    res.triggered = ((baseDistance - dist) >= cachedThreshold);
-    // Serial.printf("%s | Dist: %.0f\n", res.triggered ? "🔴" : "🟢", dist);
+    // Auslösung wenn Distanz zwischen Min und Max liegt
+    res.triggered = (dist >= cachedMinDistance && dist <= cachedMaxDistance);
+    // Serial.printf("%s | Dist: %.0f (Min: %.0f, Max: %.0f)\n", res.triggered ? "🔴" : "🟢", dist, cachedMinDistance, cachedMaxDistance);
     return res;
 }
 
-float calibrateSensor()
+void updateDistanceCache()
 {
-    Serial.println("[SENSOR_DEBUG] Kalibriere Sensor...");
-    baseDistance = getDistanceCM();
-    if (baseDistance == 0)
-    {
-        baseDistance = MAX_DISTANCE_CM;
-    }
-    Serial.printf("[SENSOR_DEBUG] Kalibrierung abgeschlossen. Basisdistanz: %.2f cm\n", baseDistance);
-    return baseDistance;
+    cachedMinDistance = getMinDistance();
+    cachedMaxDistance = getMaxDistance();
+    Serial.printf("[SENSOR_DEBUG] Distanz-Cache aktualisiert - Min: %.2f cm, Max: %.2f cm\n", cachedMinDistance, cachedMaxDistance);
 }
 
-void updateThresholdCache()
+float getCurrentMinDistance()
 {
-    cachedThreshold = getSensorThreshold();
-    Serial.printf("[SENSOR_DEBUG] Threshold-Cache aktualisiert auf: %.2f cm\n", cachedThreshold);
+    return cachedMinDistance;
 }
 
-float getCurrentThreshold()
+float getCurrentMaxDistance()
 {
-    return cachedThreshold;
-}
-
-float getBaseDistance()
-{
-    return baseDistance;
-}
-
-bool isBaseDistanceMaxRange()
-{
-    return baseDistance >= MAX_DISTANCE_CM;
+    return cachedMaxDistance;
 }
