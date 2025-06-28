@@ -1,0 +1,106 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "PlatformIO: Build",
+            "type": "shell",
+            "command": "pio run",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "isBackground": false,
+            "problemMatcher": ["$platformio"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PlatformIO: Upload Firmware",
+            "type": "shell",
+            "command": "pio run --target upload",
+            "group": "build",
+            "isBackground": false,
+            "problemMatcher": ["$platformio"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PlatformIO: Upload Filesystem (LittleFS)",
+            "type": "shell",
+            "command": "pio run --target uploadfs",
+            "group": "build",
+            "isBackground": false,
+            "problemMatcher": ["$platformio"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PlatformIO: Update All (Build + Upload Firmware + Upload FS)",
+            "type": "shell",
+            "command": "pio run && pio run --target upload && pio run --target uploadfs",
+            "group": "build",
+            "isBackground": false,
+            "problemMatcher": ["$platformio"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PlatformIO: Clean",
+            "type": "shell",
+            "command": "pio run --target clean",
+            "group": "build",
+            "isBackground": false,
+            "problemMatcher": ["$platformio"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PlatformIO: Monitor Serial",
+            "type": "shell",
+            "command": "pio device monitor",
+            "group": "test",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Compress Data Files",
+            "type": "shell",
+            "command": "python compress_data.py",
+            "group": "build",
+            "isBackground": false,
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ]
+}

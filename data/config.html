@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <title>Konfiguration</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/config.css" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    </head>
+    <body>
+        <h1>Konfiguration</h1>
+        <div class="status-row">
+            <span id="statusEmoji" class="unknown">⚪</span>
+            <span id="statusText">Unbekannt</span>
+        </div>
+        <div class="threshold-container">
+            <h3>Sensor-Einstellungen</h3>
+
+            <div class="sensor-grid">
+                <div class="sensor-item">
+                    <div class="sensor-label">Basisdistanz</div>
+                    <div class="sensor-value" id="baseDistanceValue">-- cm</div>
+                    <button class="sensor-button" id="recalibrateBtn">
+                        Rekalibrieren
+                    </button>
+                </div>
+
+                <div class="sensor-item">
+                    <div class="sensor-label">Auslöseschwelle</div>
+                    <div class="sensor-input">
+                        <input
+                            type="number"
+                            id="thresholdInput"
+                            min="1"
+                            max="200"
+                            step="0.1"
+                            value="50.0"
+                            placeholder="50.0"
+                        />
+                        <span>cm</span>
+                    </div>
+                    <button class="sensor-button" id="saveThresholdBtn">
+                        Schwelle speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="devices-container">
+            <h3>ESP-Geräte</h3>
+            <div class="device-grid" id="devicesContainer">
+                <!-- Geräte werden hier dynamisch eingefügt -->
+            </div>
+        </div>
+        <button id="resetBtn">Alle Einstellungen löschen</button>
+        <button
+            id="home-btn"
+            onclick="window.location.href='/'"
+            aria-label="Zur Hauptseite"
+        >
+            🏠
+        </button>
+        <script src="/config.js"></script>
+    </body>
+</html>

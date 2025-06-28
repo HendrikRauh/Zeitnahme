@@ -6,6 +6,7 @@
 #include <AsyncTCP.h>
 #include <data.h>
 #include <ESPAsyncWebServer.h>
+#include <LittleFS.h>
 #include <Sensor.h>
 #include <data.h>
 #include <task.h>
@@ -26,9 +27,5 @@ void broadcastDiscoveredDevices();
 void initWebpage();
 
 void initWebsocket();
-
-String generateConfigPage();
-
-String generateMainPage(unsigned long lastTime);
 
 #endif
