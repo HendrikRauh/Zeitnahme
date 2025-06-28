@@ -43,8 +43,8 @@ MeasureResult measure()
         dist = MAX_DISTANCE_CM;
     }
 
-    // res.triggered = (fabs(getDistanceCM() - baseDistance) >= THRESHOLD_CM);
-    res.triggered = (fabs(dist - baseDistance) >= cachedThreshold);
+    // res.triggered = (fabs(dist - baseDistance) >= cachedThreshold);
+    res.triggered = ((baseDistance - dist) >= cachedThreshold);
     // Serial.printf("%s | Dist: %.0f\n", res.triggered ? "🔴" : "🟢", dist);
     return res;
 }
