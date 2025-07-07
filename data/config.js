@@ -130,6 +130,11 @@ function setupEventListeners() {
                 });
         }
     };
+
+    // Refresh Devices Button
+    document.getElementById("refreshDevicesBtn").onclick = function () {
+        discoverDevices();
+    };
 }
 
 function updateStatusDisplay(status) {
