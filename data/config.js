@@ -33,6 +33,11 @@ function loadDeviceInfo() {
     // Lade Distanz-Einstellungen
     loadDistanceSettings();
 
+    // Lade Gerätepräferenzen
+    loadDevicePreferences();
+}
+
+function loadDevicePreferences() {
     fetch("/preferences")
         .then((response) => response.text())
         .then((data) => {
@@ -129,6 +134,14 @@ function setupEventListeners() {
                     location.reload();
                 });
         }
+    };
+
+    // Refresh Devices Button
+    document.getElementById("refreshDevicesBtn").onclick = function () {
+        // Neue Geräte suchen
+        discoverDevices();
+        // Gespeicherte Geräte neu laden
+        loadDevicePreferences();
     };
 }
 
