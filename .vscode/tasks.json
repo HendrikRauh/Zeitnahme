@@ -47,9 +47,9 @@
             }
         },
         {
-            "label": "PlatformIO: Update All (Build + Upload Firmware + Upload FS)",
+            "label": "PlatformIO: Update All (Upload Firmware + Upload FS)",
             "type": "shell",
-            "command": "pio run && pio run --target upload && pio run --target uploadfs",
+            "command": "pio run --target upload && pio run --target uploadfs",
             "group": "build",
             "isBackground": false,
             "problemMatcher": ["$platformio"],
@@ -86,20 +86,6 @@
                 "reveal": "always",
                 "focus": true,
                 "panel": "dedicated"
-            }
-        },
-        {
-            "label": "Compress Data Files",
-            "type": "shell",
-            "command": "python compress_data.py",
-            "group": "build",
-            "isBackground": false,
-            "problemMatcher": [],
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
             }
         }
     ]
