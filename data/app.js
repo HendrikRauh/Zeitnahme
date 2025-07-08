@@ -18,6 +18,27 @@ function formatDuration(ms) {
 // Initial formatting
 document.addEventListener("DOMContentLoaded", function () {
     const zeitElement = document.getElementById("zeit");
+    const settingsBtn = document.getElementById("settings-btn");
+
+    // Inaktivitäts-Timeout (z.B. 10 Sekunden)
+    let hideTimeout;
+    function showSettingsBtn() {
+        settingsBtn.style.transition = "opacity 0.5s";
+        settingsBtn.style.opacity = "1";
+        settingsBtn.style.pointerEvents = "auto";
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            settingsBtn.style.opacity = "0";
+            settingsBtn.style.pointerEvents = "none";
+        }, 10000); // 10 Sekunden
+    }
+
+    // Bei Aktivität Button wieder anzeigen und Timer zurücksetzen
+    ["mousemove", "keydown", "touchstart"].forEach((event) => {
+        document.addEventListener(event, showSettingsBtn);
+    });
+    // Initial ausblenden nach Timeout
+    showSettingsBtn();
 
     // Lade aktuelle Zeit vom Server
     fetch("/api/last_time")
