@@ -32,7 +32,8 @@ def generate_fs_hash(data_dir):
     
     for file_path in files:
         with open(file_path, 'rb') as f:
-            combined_hash.update(f.read())
+            while chunk := f.read(8192):
+                combined_hash.update(chunk)
     
     return combined_hash.hexdigest()
 
