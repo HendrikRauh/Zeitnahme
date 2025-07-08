@@ -25,7 +25,10 @@ document.addEventListener("DOMContentLoaded", function () {
 function showVersion() {
     const versionDiv = document.createElement("div");
     versionDiv.className = "version-info";
-    versionDiv.innerHTML = '<span id="version-text">Lädt...</span>';
+    const versionSpan = document.createElement("span");
+    versionSpan.id = "version-text";
+    versionSpan.textContent = "Lädt...";
+    versionDiv.appendChild(versionSpan);
     document.body.appendChild(versionDiv);
 
     // Firmware-Hash aus device_info holen
