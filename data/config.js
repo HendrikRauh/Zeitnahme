@@ -491,9 +491,3 @@ function saveDeviceRole(selectElement, mac, isSelf) {
 function discoverDevices() {
     fetch("/discover", { method: "POST" });
 }
-
-// Initialisierung nach DOM-Load
-document.addEventListener("DOMContentLoaded", function () {
-    loadThreshold();
-    loadBaseDistance();
-});
