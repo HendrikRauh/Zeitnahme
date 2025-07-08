@@ -7,6 +7,7 @@ Import("env")
 import gzip
 import os
 import shutil
+import hashlib
 from pathlib import Path
 
 
@@ -22,6 +23,19 @@ def compress_file(input_path, output_path):
     
     print(f"✓ {input_path.name} -> {output_path.name} ({compression_ratio:.1f}% kleiner)")
 
+def generate_fs_hash(data_dir):
+    """Generiert einen Hash über alle Dateien im data/ Ordner."""
+    combined_hash = hashlib.md5()
+    
+    # Alle Dateien sortiert verarbeiten für konsistenten Hash
+    files = sorted([f for f in data_dir.iterdir() if f.is_file() and not f.name.endswith('.gz') and f.name != '.hash'])
+    
+    for file_path in files:
+        with open(file_path, 'rb') as f:
+            combined_hash.update(f.read())
+    
+    return combined_hash.hexdigest()
+
 def compress_data_files(*args, **kwargs):
     """PlatformIO Pre-Action: Komprimiert alle Dateien im data/ Ordner."""
     print("🗜️  [PRE-SCRIPT] Komprimiere Dateien für LittleFS...")
@@ -31,6 +45,15 @@ def compress_data_files(*args, **kwargs):
     if not data_dir.exists():
         print("❌ data/ Ordner nicht gefunden!")
         return
+    
+    # Generiere Filesystem-Hash
+    fs_hash = generate_fs_hash(data_dir)
+    
+    # Speichere Hash in .hash Datei
+    with open(data_dir / '.hash', 'w') as f:
+        f.write(fs_hash)
+    
+    print(f"📦 Filesystem Hash: {fs_hash}")
     
     # Alle Dateien komprimieren (außer bereits .gz Dateien)
     compressed_count = 0

@@ -70,6 +70,18 @@ void initWebpage()
     json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
     json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\",";
     json += "\"firmware_hash\":\"" + ESP.getSketchMD5() + "\"";
+    
+    // Filesystem-Hash aus .hash lesen
+    if (LittleFS.exists("/.hash")) {
+        File file = LittleFS.open("/.hash", "r");
+        if (file) {
+            String fsHash = file.readString();
+            fsHash.trim(); // Entferne Zeilenumbrüche
+            json += ",\"filesystem_hash\":\"" + fsHash + "\"";
+            file.close();
+        }
+    }
+    
     json += "}";
     request->send(200, "application/json", json); });
 
@@ -233,6 +245,11 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
   server.on("/config.js", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.js.gz", "application/javascript");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response); });
+  server.on("/.hash", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/.hash.gz", "text/plain");
     response->addHeader("Content-Encoding", "gzip");
     request->send(response); });
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)

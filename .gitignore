@@ -15,6 +15,9 @@
 # Komprimierte Web-Dateien (werden automatisch vom Script generiert)
 data/*.gz
 
+# Automatisch generierte Hash-Dateien
+data/.hash
+
 # Betriebssystem-spezifische Dateien
 .DS_Store
 Thumbs.db

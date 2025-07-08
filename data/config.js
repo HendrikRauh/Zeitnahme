@@ -35,9 +35,12 @@ function showVersion() {
             const fwHash = data.firmware_hash
                 ? data.firmware_hash.substring(0, 8)
                 : "unknown";
+            const fsHash = data.filesystem_hash
+                ? data.filesystem_hash.substring(0, 8)
+                : "unknown";
             document.getElementById(
                 "version-text"
-            ).textContent = `FW: ${fwHash}`;
+            ).textContent = `FW: ${fwHash} | FS: ${fsHash}`;
         })
         .catch(() => {
             document.getElementById("version-text").textContent = "FW: error";
