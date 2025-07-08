@@ -249,8 +249,7 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
     request->send(response); });
   server.on("/.hash", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/.hash.gz", "text/plain");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/.hash", "text/plain");
     request->send(response); });
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
             {
