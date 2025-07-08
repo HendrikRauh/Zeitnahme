@@ -68,7 +68,8 @@ void initWebpage()
             {
     String json = "{";
     json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
-    json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\"";
+    json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\",";
+    json += "\"firmware_hash\":\"" + ESP.getSketchMD5() + "\"";
     json += "}";
     request->send(200, "application/json", json); });
 
@@ -204,6 +205,7 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
 } else {
   request->send(400, "text/plain", "Fehlende Parameter");
 } });
+
   server.addHandler(&ws);
 
   // Statische Dateien über LittleFS bereitstellen (WICHTIG: Nach allen API-Routen!)

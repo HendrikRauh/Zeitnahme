@@ -17,7 +17,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Geräte automatisch suchen
     discoverDevices();
+
+    // Version-Anzeige
+    showVersion();
 });
+
+function showVersion() {
+    const versionDiv = document.createElement("div");
+    versionDiv.className = "version-info";
+    versionDiv.innerHTML = '<span id="version-text">Lädt...</span>';
+    document.body.appendChild(versionDiv);
+
+    // Firmware-Hash aus device_info holen
+    fetch("/api/device_info")
+        .then((response) => response.json())
+        .then((data) => {
+            const fwHash = data.firmware_hash
+                ? data.firmware_hash.substring(0, 8)
+                : "unknown";
+            document.getElementById(
+                "version-text"
+            ).textContent = `FW: ${fwHash}`;
+        })
+        .catch(() => {
+            document.getElementById("version-text").textContent = "FW: error";
+        });
+}
 
 function loadDeviceInfo() {
     // Lade Device Info über API
