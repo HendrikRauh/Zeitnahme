@@ -5,9 +5,9 @@ Wird automatisch vor dem Filesystem-Upload ausgeführt.
 
 Import("env")
 import gzip
+import hashlib
 import os
 import shutil
-import hashlib
 from pathlib import Path
 
 
@@ -56,10 +56,10 @@ def compress_data_files(*args, **kwargs):
     
     print(f"📦 Filesystem Hash: {fs_hash}")
     
-    # Alle Dateien komprimieren (außer bereits .gz Dateien)
+    # Alle Dateien komprimieren (außer bereits .gz Dateien und .hash)
     compressed_count = 0
     for file_path in data_dir.iterdir():
-        if file_path.is_file() and not file_path.name.endswith('.gz'):
+        if file_path.is_file() and not file_path.name.endswith('.gz') and file_path.name != '.hash':
             gz_path = file_path.with_suffix(file_path.suffix + '.gz')
             compress_file(file_path, gz_path)
             compressed_count += 1
