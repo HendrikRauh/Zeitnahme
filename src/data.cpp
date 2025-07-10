@@ -1,10 +1,12 @@
 #include <data.h>
 #include <Sensor.h>
+#include <deque>
 
 Role currentRole;
 
 std::vector<DeviceInfo> discoveredDevices;
 std::vector<DeviceInfo> savedDevices;
+std::deque<RaceEntry> raceQueue;
 
 Preferences preferences;
 
@@ -279,4 +281,19 @@ void setMaxDistance(float maxDistance)
 
     // Aktualisiere den Cache im Sensor-Modul für bessere Performance
     updateDistanceCache();
+}
+
+void addRaceStart(unsigned long startTime)
+{
+    raceQueue.push_back({startTime});
+}
+
+bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned long &duration)
+{
+    if (raceQueue.empty())
+        return false;
+    startTime = raceQueue.front().startTime;
+    duration = finishTime - startTime;
+    raceQueue.pop_front();
+    return true;
 }

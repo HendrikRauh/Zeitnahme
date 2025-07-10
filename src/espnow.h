@@ -18,6 +18,12 @@ struct SaveDeviceMessage
     Role senderRole;
 };
 
+struct RaceEventMessage
+{
+    Role senderRole;         // ROLE_START oder ROLE_ZIEL
+    unsigned long eventTime; // millis() beim Auslösen
+};
+
 void initEspNow();
 
 void sendIdentity(const uint8_t *dest);
@@ -35,5 +41,8 @@ void searchForDevices();
 void addDeviceToPeer(const uint8_t *mac);
 
 void removeDeviceFromPeer(const uint8_t *mac);
+
+// Sende RaceEventMessage an alle bekannten Geräte
+void broadcastRaceEvent(Role senderRole, unsigned long eventTime);
 
 #endif

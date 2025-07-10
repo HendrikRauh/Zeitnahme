@@ -23,6 +23,7 @@ void resetAll();
 #include <role.h>
 #include <Utility.h>
 #include <espnow.h>
+#include <deque>
 
 struct DeviceInfo
 {
@@ -57,5 +58,15 @@ float getMinDistance();
 float getMaxDistance();
 void setMinDistance(float minDistance);
 void setMaxDistance(float maxDistance);
+
+struct RaceEntry
+{
+    unsigned long startTime;
+};
+
+extern std::deque<RaceEntry> raceQueue;
+
+void addRaceStart(unsigned long startTime);
+bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned long &duration);
 
 #endif

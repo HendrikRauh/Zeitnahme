@@ -14,8 +14,21 @@ void lichtschrankeTask(void *pvParameters)
 
         if (res.triggered && status == STATUS_NORMAL && res.time >= cooldownUntil)
         {
-            calcLastTime(lastTrigger, res.time);
-            broadcastLastTime(getLastTime());
+            if (getOwnRole() == ROLE_START)
+            {
+                addRaceStart(res.time);
+                broadcastRaceEvent(ROLE_START, res.time);
+            }
+            else if (getOwnRole() == ROLE_ZIEL)
+            {
+                unsigned long startTime, duration;
+                if (finishRace(res.time, startTime, duration))
+                {
+                    Serial.printf("[RACE] Zeit: %lu ms (Start: %lu, Ziel: %lu)\n", duration, startTime, res.time);
+                    wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(duration) + "}");
+                }
+                broadcastRaceEvent(ROLE_ZIEL, res.time);
+            }
             lastTrigger = res.time;
             status = STATUS_TRIGGERED;
             // Serial.printf("🔴 %lu\n", res.time);

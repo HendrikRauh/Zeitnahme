@@ -1,4 +1,5 @@
 #include <espnow.h>
+#include <data.h>
 
 void handleSaveDeviceMessage(const uint8_t *incomingData)
 {
@@ -44,6 +45,24 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     else if (len == sizeof(SaveDeviceMessage))
     {
         handleSaveDeviceMessage(incomingData);
+    }
+    else if (len == sizeof(RaceEventMessage))
+    {
+        RaceEventMessage msg;
+        memcpy(&msg, incomingData, sizeof(msg));
+        if (msg.senderRole == ROLE_START)
+        {
+            addRaceStart(msg.eventTime);
+        }
+        else if (msg.senderRole == ROLE_ZIEL)
+        {
+            unsigned long startTime, duration;
+            if (finishRace(msg.eventTime, startTime, duration))
+            {
+                Serial.printf("[RACE] Zeit: %lu ms (Start: %lu, Ziel: %lu)\n", duration, startTime, msg.eventTime);
+                wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(duration) + "}");
+            }
+        }
     }
 }
 
@@ -186,4 +205,23 @@ void searchForDevices()
 {
     clearDiscoveredDevices();
     sendDiscoveryMessage();
+}
+
+void broadcastRaceEvent(Role senderRole, unsigned long eventTime)
+{
+    RaceEventMessage msg;
+    msg.senderRole = senderRole;
+    msg.eventTime = eventTime;
+    for (const auto &dev : getSavedDevices())
+    {
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, dev.mac, 6);
+        peerInfo.channel = ESP_NOW_CHANNEL;
+        peerInfo.encrypt = false;
+        if (!esp_now_is_peer_exist(dev.mac))
+        {
+            esp_now_add_peer(&peerInfo);
+        }
+        esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
+    }
 }
