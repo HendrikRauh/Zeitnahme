@@ -36,10 +36,12 @@ document.addEventListener("DOMContentLoaded", function () {
         settingsBtn.style.transition = "opacity 0.5s";
         settingsBtn.style.opacity = "1";
         settingsBtn.style.pointerEvents = "auto";
+        settingsBtn.setAttribute("aria-hidden", "false");
         clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
             settingsBtn.style.opacity = "0";
             settingsBtn.style.pointerEvents = "none";
+            settingsBtn.setAttribute("aria-hidden", "true");
         }, INACTIVITY_DELAY); // 10 Sekunden
     }
 
