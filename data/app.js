@@ -1,3 +1,6 @@
+const INACTIVITY_DELAY = 10000; // ms
+const DEBOUNCE_DELAY = 100; // ms
+
 function formatDuration(ms) {
     let milliseconds = ms % 1000;
     let totalSeconds = Math.floor(ms / 1000);
@@ -18,6 +21,48 @@ function formatDuration(ms) {
 // Initial formatting
 document.addEventListener("DOMContentLoaded", function () {
     const zeitElement = document.getElementById("zeit");
+    const settingsBtn = document.getElementById("settings-btn");
+
+    if (!settingsBtn) {
+        console.warn(
+            "#settings-btn not found in DOM. Settings button logic will be skipped."
+        );
+        return;
+    }
+
+    // Inaktivitäts-Timeout (z.B. 10 Sekunden)
+    let hideTimeout;
+    function showSettingsBtn() {
+        settingsBtn.style.transition = "opacity 0.5s";
+        settingsBtn.style.opacity = "1";
+        settingsBtn.style.pointerEvents = "auto";
+        settingsBtn.setAttribute("aria-hidden", "false");
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            settingsBtn.style.opacity = "0";
+            settingsBtn.style.pointerEvents = "none";
+            settingsBtn.setAttribute("aria-hidden", "true");
+        }, INACTIVITY_DELAY); // 10 Sekunden
+    }
+
+    // Debounce utility function
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Debounced version of showSettingsBtn
+    const debouncedShowSettingsBtn = debounce(showSettingsBtn, DEBOUNCE_DELAY);
+
+    // Bei Aktivität Button wieder anzeigen und Timer zurücksetzen
+    ["mousemove", "keydown", "touchstart"].forEach((event) => {
+        document.addEventListener(event, debouncedShowSettingsBtn);
+    });
+    // Initial ausblenden nach Timeout
+    showSettingsBtn();
 
     // Lade aktuelle Zeit vom Server
     fetch("/api/last_time")
