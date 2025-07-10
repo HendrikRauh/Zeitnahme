@@ -1,3 +1,6 @@
+const INACTIVITY_DELAY = 10000; // ms
+const DEBOUNCE_DELAY = 100; // ms
+
 function formatDuration(ms) {
     let milliseconds = ms % 1000;
     let totalSeconds = Math.floor(ms / 1000);
@@ -30,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
         hideTimeout = setTimeout(() => {
             settingsBtn.style.opacity = "0";
             settingsBtn.style.pointerEvents = "none";
-        }, 10000); // 10 Sekunden
+        }, INACTIVITY_DELAY); // 10 Sekunden
     }
 
     // Debounce utility function
@@ -43,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Debounced version of showSettingsBtn
-    const debouncedShowSettingsBtn = debounce(showSettingsBtn, 100);
+    const debouncedShowSettingsBtn = debounce(showSettingsBtn, DEBOUNCE_DELAY);
 
     // Bei Aktivität Button wieder anzeigen und Timer zurücksetzen
     ["mousemove", "keydown", "touchstart"].forEach((event) => {
