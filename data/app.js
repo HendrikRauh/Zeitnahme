@@ -26,18 +26,28 @@ document.addEventListener("DOMContentLoaded", function () {
         settingsBtn.style.transition = "opacity 0.5s";
         settingsBtn.style.opacity = "1";
         settingsBtn.style.pointerEvents = "auto";
-        settingsBtn.removeAttribute("aria-hidden");
         clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
             settingsBtn.style.opacity = "0";
             settingsBtn.style.pointerEvents = "none";
-            settingsBtn.setAttribute("aria-hidden", "true");
         }, 10000); // 10 Sekunden
     }
 
+    // Debounce utility function
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Debounced version of showSettingsBtn
+    const debouncedShowSettingsBtn = debounce(showSettingsBtn, 100);
+
     // Bei Aktivität Button wieder anzeigen und Timer zurücksetzen
     ["mousemove", "keydown", "touchstart"].forEach((event) => {
-        document.addEventListener(event, showSettingsBtn);
+        document.addEventListener(event, debouncedShowSettingsBtn);
     });
     // Initial ausblenden nach Timeout
     showSettingsBtn();
