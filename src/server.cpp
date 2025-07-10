@@ -90,6 +90,11 @@ void initWebpage()
     String json = "{\"lastTime\":" + String(getLastTime()) + "}";
     request->send(200, "application/json", json); });
 
+  server.on("/api/lauf_count", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    String json = "{\"count\":" + String(getLaufCount()) + "}";
+    request->send(200, "application/json", json); });
+
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
             {
       loadDeviceListFromPreferences();

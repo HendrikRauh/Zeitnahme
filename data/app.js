@@ -75,12 +75,27 @@ document.addEventListener("DOMContentLoaded", function () {
             zeitElement.textContent = formatDuration(0);
         });
 
+    // Hilfsfunktion: Laufstatus anzeigen
+    function updateLaufstatus(count) {
+        const laufstatusTop = document.getElementById("laufstatus-top");
+        const laufstatusBottom = document.getElementById("laufstatus-bottom");
+        laufstatusTop.textContent = laufstatusBottom.textContent = "";
+        if (count > 0) {
+            laufstatusTop.textContent = "🔺".repeat(count);
+            laufstatusBottom.textContent = "🔻".repeat(count);
+        }
+    }
+
     let ws = new WebSocket("ws://" + location.host + "/ws");
+    // WebSocket-Handler erweitern
     ws.onmessage = function (event) {
         try {
             let msg = JSON.parse(event.data);
             if (msg.type === "lastTime") {
                 zeitElement.textContent = formatDuration(Number(msg.value));
+            }
+            if (msg.type === "laufCount") {
+                updateLaufstatus(Number(msg.value));
             }
         } catch (e) {
             console.error("WebSocket message error:", e);
@@ -98,4 +113,10 @@ document.addEventListener("DOMContentLoaded", function () {
     ws.onerror = function (error) {
         console.error("WebSocket error:", error);
     };
+
+    // Initialen Laufstatus laden
+    fetch("/api/lauf_count")
+        .then((response) => response.json())
+        .then((data) => updateLaufstatus(Number(data.count)))
+        .catch(() => updateLaufstatus(0));
 });

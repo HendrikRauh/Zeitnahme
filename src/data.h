@@ -69,4 +69,7 @@ extern std::deque<RaceEntry> raceQueue;
 void addRaceStart(unsigned long startTime);
 bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned long &duration);
 
+// Gibt die aktuelle Anzahl laufender Läufe zurück
+int getLaufCount();
+
 #endif

@@ -286,6 +286,7 @@ void setMaxDistance(float maxDistance)
 void addRaceStart(unsigned long startTime)
 {
     raceQueue.push_back({startTime});
+    wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(raceQueue.size()) + "}");
 }
 
 bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned long &duration)
@@ -295,5 +296,11 @@ bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned lon
     startTime = raceQueue.front().startTime;
     duration = finishTime - startTime;
     raceQueue.pop_front();
+    wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(raceQueue.size()) + "}");
     return true;
+}
+
+int getLaufCount()
+{
+    return raceQueue.size();
 }
