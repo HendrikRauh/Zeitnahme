@@ -23,6 +23,17 @@ void broadcastDiscoveredDevices()
   wsBrodcastMessage("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
 }
 
+void broadcastMasterStatus()
+{
+  String json = "{\"type\":\"master_status\",\"status\":\"" + masterStatusToString(getMasterStatus()) + "\"";
+  if (isSlave())
+  {
+    json += ",\"masterMac\":\"" + macToShortString(getMasterMac()) + "\"";
+  }
+  json += "}";
+  wsBrodcastMessage(json);
+}
+
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
 {
   wsBrodcastMessage("{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}");
@@ -37,6 +48,13 @@ void initWebsocket()
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
       // Status
       client->text("{\"type\":\"status\",\"status\":\"" + statusToString(getStatus()) + "\"}");
+      // Master-Status
+      String masterJson = "{\"type\":\"master_status\",\"status\":\"" + masterStatusToString(getMasterStatus()) + "\"";
+      if (isSlave()) {
+        masterJson += ",\"masterMac\":\"" + macToShortString(getMasterMac()) + "\"";
+      }
+      masterJson += "}";
+      client->text(masterJson);
       // Letzte Zeit
       client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
       // Gespeicherte Geräte
@@ -69,6 +87,10 @@ void initWebpage()
     String json = "{";
     json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
     json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\",";
+    json += "\"masterStatus\":\"" + masterStatusToString(getMasterStatus()) + "\",";
+    if (isSlave()) {
+        json += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
+    }
     json += "\"firmware_hash\":\"" + ESP.getSketchMD5() + "\"";
     
     // Filesystem-Hash aus .hash lesen

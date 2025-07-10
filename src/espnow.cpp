@@ -1,5 +1,7 @@
 #include <espnow.h>
 #include <data.h>
+#include <server.h>
+#include <algorithm>
 
 void handleSaveDeviceMessage(const uint8_t *incomingData)
 {
@@ -50,19 +52,75 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     {
         RaceEventMessage msg;
         memcpy(&msg, incomingData, sizeof(msg));
-        if (msg.senderRole == ROLE_START)
+
+        if (isMaster())
         {
-            addRaceStart(msg.eventTime);
-        }
-        else if (msg.senderRole == ROLE_ZIEL)
-        {
-            unsigned long startTime, duration;
-            if (finishRace(msg.eventTime, startTime, duration))
+            // Master verarbeitet Race-Events
+            if (msg.senderRole == ROLE_START)
             {
-                Serial.printf("[RACE] Zeit: %lu ms (Start: %lu, Ziel: %lu)\n", duration, startTime, msg.eventTime);
-                wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(duration) + "}");
+                masterAddRaceStart(msg.eventTime, msg.senderMac, msg.localTime);
+            }
+            else if (msg.senderRole == ROLE_ZIEL)
+            {
+                masterFinishRace(msg.eventTime, msg.senderMac, msg.localTime);
             }
         }
+        else
+        {
+            // Slaves leiten Race-Events an Master weiter (falls nötig)
+            Serial.printf("[SLAVE_DEBUG] Race-Event von %s empfangen, Rolle: %s\n",
+                          macToString(msg.senderMac).c_str(), roleToString(msg.senderRole).c_str());
+        }
+    }
+    else if (len == sizeof(MasterHeartbeatMessage))
+    {
+        // Prüfe Message-Typ
+        uint8_t messageType = incomingData[0];
+        if (messageType == MSG_TYPE_HEARTBEAT)
+        {
+            MasterHeartbeatMessage msg;
+            memcpy(&msg, incomingData, sizeof(msg));
+            handleMasterHeartbeat(msg.masterMac, msg.masterTime);
+        }
+        else
+        {
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für Heartbeat-Größe\n", messageType);
+        }
+    }
+    else if (len == sizeof(TimeSyncRequestMessage))
+    {
+        // Prüfe Message-Typ
+        uint8_t messageType = incomingData[0];
+        if (messageType == MSG_TYPE_TIME_SYNC_REQUEST)
+        {
+            TimeSyncRequestMessage msg;
+            memcpy(&msg, incomingData, sizeof(msg));
+            handleTimeSyncRequest(msg.requesterMac, msg.requestTime);
+        }
+        else
+        {
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für TimeSyncRequest-Größe\n", messageType);
+        }
+    }
+    else if (len == sizeof(TimeSyncResponseMessage))
+    {
+        // Prüfe Message-Typ
+        uint8_t messageType = incomingData[0];
+        if (messageType == MSG_TYPE_TIME_SYNC_RESPONSE)
+        {
+            TimeSyncResponseMessage msg;
+            memcpy(&msg, incomingData, sizeof(msg));
+            unsigned long roundTripTime = millis() - msg.originalRequestTime;
+            handleTimeSyncResponse(msg.masterMac, msg.masterTime, roundTripTime);
+        }
+        else
+        {
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für TimeSyncResponse-Größe\n", messageType);
+        }
+    }
+    else if (len == sizeof(RaceUpdateMessage))
+    {
+        handleRaceUpdate(incomingData, len);
     }
 }
 
@@ -212,16 +270,99 @@ void broadcastRaceEvent(Role senderRole, unsigned long eventTime)
     RaceEventMessage msg;
     msg.senderRole = senderRole;
     msg.eventTime = eventTime;
+    msg.localTime = millis();
+    memcpy(msg.senderMac, getMacAddress(), 6);
+
+    if (isSlave())
+    {
+        // Slaves senden nur an Master
+        esp_now_send(getMasterMac(), (uint8_t *)&msg, sizeof(msg));
+        Serial.printf("[SLAVE_DEBUG] Race-Event an Master gesendet: %s\n", macToString(getMasterMac()).c_str());
+    }
+    else if (isMaster())
+    {
+        // Master sendet an alle Slaves
+        for (const auto &dev : getSavedDevices())
+        {
+            if (memcmp(dev.mac, getMacAddress(), 6) != 0) // Nicht an sich selbst senden
+            {
+                esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
+            }
+        }
+        Serial.println("[MASTER_DEBUG] Race-Event an alle Slaves gesendet");
+    }
+}
+
+// Master-System Funktionen
+void sendMasterHeartbeat()
+{
+    if (!isMaster())
+        return;
+
+    MasterHeartbeatMessage msg;
+    msg.messageType = MSG_TYPE_HEARTBEAT;
+    memcpy(msg.masterMac, getMacAddress(), 6);
+    msg.masterTime = millis();
+    msg.sequenceNumber = millis() / 1000; // Einfache Sequenznummer
+
     for (const auto &dev : getSavedDevices())
     {
-        esp_now_peer_info_t peerInfo = {};
-        memcpy(peerInfo.peer_addr, dev.mac, 6);
-        peerInfo.channel = ESP_NOW_CHANNEL;
-        peerInfo.encrypt = false;
-        if (!esp_now_is_peer_exist(dev.mac))
+        if (memcmp(dev.mac, getMacAddress(), 6) != 0) // Nicht an sich selbst senden
         {
-            esp_now_add_peer(&peerInfo);
+            esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
         }
-        esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
     }
+    Serial.println("[MASTER_DEBUG] Heartbeat an alle Slaves gesendet");
+}
+
+void sendTimeSyncRequest()
+{
+    if (!isSlave())
+        return;
+
+    TimeSyncRequestMessage msg;
+    msg.messageType = MSG_TYPE_TIME_SYNC_REQUEST;
+    memcpy(msg.requesterMac, getMacAddress(), 6);
+    msg.requestTime = millis();
+    msg.sequenceNumber = millis(); // Einfache Sequenznummer
+
+    esp_now_send(getMasterMac(), (uint8_t *)&msg, sizeof(msg));
+    Serial.printf("[SYNC_DEBUG] Zeit-Sync-Anfrage an Master gesendet: %s\n", macToString(getMasterMac()).c_str());
+}
+
+void sendTimeSyncResponse(const uint8_t *requesterMac, unsigned long originalRequestTime, unsigned long sequenceNumber)
+{
+    if (!isMaster())
+        return;
+
+    TimeSyncResponseMessage msg;
+    msg.messageType = MSG_TYPE_TIME_SYNC_RESPONSE;
+    memcpy(msg.masterMac, getMacAddress(), 6);
+    msg.masterTime = millis();
+    msg.originalRequestTime = originalRequestTime;
+    msg.sequenceNumber = sequenceNumber;
+
+    esp_now_send(requesterMac, (uint8_t *)&msg, sizeof(msg));
+    Serial.printf("[SYNC_DEBUG] Zeit-Sync-Antwort an %s gesendet\n", macToString(requesterMac).c_str());
+}
+
+void sendRaceUpdate()
+{
+    if (!isMaster())
+        return;
+
+    RaceUpdateMessage msg;
+    memcpy(msg.masterMac, getMacAddress(), 6);
+    msg.raceCount = raceQueue.size() > 10 ? 10 : raceQueue.size(); // Maximal 10 Rennen
+    msg.timestamp = millis();
+
+    // Sende die Nachricht ohne Race-Details (vereinfachte Implementierung)
+    for (const auto &dev : getSavedDevices())
+    {
+        if (memcmp(dev.mac, getMacAddress(), 6) != 0) // Nicht an sich selbst senden
+        {
+            esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
+        }
+    }
+    Serial.printf("[MASTER_DEBUG] Race-Update an alle Slaves gesendet: %d Rennen\n", msg.raceCount);
 }
