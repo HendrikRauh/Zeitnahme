@@ -23,6 +23,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const zeitElement = document.getElementById("zeit");
     const settingsBtn = document.getElementById("settings-btn");
 
+    if (!settingsBtn) {
+        console.warn(
+            "#settings-btn not found in DOM. Settings button logic will be skipped."
+        );
+        return;
+    }
+
     // Inaktivitäts-Timeout (z.B. 10 Sekunden)
     let hideTimeout;
     function showSettingsBtn() {
