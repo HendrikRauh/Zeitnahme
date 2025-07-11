@@ -24,6 +24,13 @@ static float cachedMinDistanceCache = 2.0f;
 static float cachedMaxDistanceCache = 100.0f;
 static bool distanceCacheLoaded = false;
 
+// Cache-Invalidierung für Distanzen
+void invalidateDistanceCache()
+{
+    distanceCacheLoaded = false;
+    Serial.println("[CACHE_DEBUG] Distanz-Cache invalidiert");
+}
+
 Role getOwnRole()
 {
     // Cache für bessere Performance
@@ -269,79 +276,60 @@ void clearDiscoveredDevices()
 }
 
 // Sensor Distance Settings Funktionen
-constexpr float DEFAULT_MIN_DISTANCE_CM = 2.0f;
-constexpr float DEFAULT_MAX_DISTANCE_CM = 100.0f;
+constexpr int DEFAULT_MIN_DISTANCE_CM = 2;
+constexpr int DEFAULT_MAX_DISTANCE_CM = 100;
 
-float getMinDistance()
+int getMinDistance()
 {
-    if (distanceCacheLoaded)
-    {
-        Serial.printf("[DISTANCE_DEBUG] Verwende gecachte Min-Distanz: %.2f cm\n", cachedMinDistanceCache);
-        return cachedMinDistanceCache;
-    }
-
     preferences.begin("lichtschranke", true);
-    float minDistance = preferences.getFloat("minDistance", DEFAULT_MIN_DISTANCE_CM);
+    int minDistance = preferences.getInt("minDistance", DEFAULT_MIN_DISTANCE_CM);
     preferences.end();
-    cachedMinDistanceCache = minDistance;
-    distanceCacheLoaded = true;
-    Serial.printf("[DISTANCE_DEBUG] Min-Distanz geladen: %.2f cm\n", minDistance);
+    Serial.printf("[DISTANCE_DEBUG] Min-Distanz geladen: %d cm\n", minDistance);
     return minDistance;
 }
 
-float getMaxDistance()
+int getMaxDistance()
 {
-    // Cache für bessere Performance
-    if (distanceCacheLoaded)
-    {
-        return cachedMaxDistanceCache;
-    }
-
     preferences.begin("lichtschranke", true);
-    float maxDistance = preferences.getFloat("maxDistance", DEFAULT_MAX_DISTANCE_CM);
+    int maxDistance = preferences.getInt("maxDistance", DEFAULT_MAX_DISTANCE_CM);
     preferences.end();
-    cachedMaxDistanceCache = maxDistance;
-    distanceCacheLoaded = true;
+    Serial.printf("[DISTANCE_DEBUG] Max-Distanz geladen: %d cm\n", maxDistance);
     return maxDistance;
 }
 
-void setMinDistance(float minDistance)
+void setMinDistance(int minDistance)
 {
     if (minDistance < 2 || minDistance > 200)
     {
-        Serial.printf("[DISTANCE_DEBUG] Ungültiger Min-Distanz-Wert: %.2f cm. Verwende Default (%.2f cm).\n", minDistance, DEFAULT_MIN_DISTANCE_CM);
+        Serial.printf("[DISTANCE_DEBUG] Ungültiger Min-Distanz-Wert: %d cm. Verwende Default (%d cm).\n", minDistance, DEFAULT_MIN_DISTANCE_CM);
         minDistance = DEFAULT_MIN_DISTANCE_CM;
     }
 
     preferences.begin("lichtschranke", false);
-    preferences.putFloat("minDistance", minDistance);
+    preferences.putInt("minDistance", minDistance);
     preferences.end();
 
-    cachedMinDistanceCache = minDistance;
+    Serial.printf("[DISTANCE_DEBUG] Min-Distanz gesetzt auf: %d cm\n", minDistance);
 
-    Serial.printf("[DISTANCE_DEBUG] Min-Distanz gesetzt auf: %.2f cm\n", minDistance);
-
-    // Aktualisiere den Cache im Sensor-Modul für bessere Performance
+    // Sensor-Cache aktualisieren
     updateDistanceCache();
 }
 
-void setMaxDistance(float maxDistance)
+void setMaxDistance(int maxDistance)
 {
     if (maxDistance < 2 || maxDistance > 200)
     {
-        Serial.printf("[DISTANCE_DEBUG] Ungültiger Max-Distanz-Wert: %.2f cm. Verwende Default (%.2f cm).\n", maxDistance, DEFAULT_MAX_DISTANCE_CM);
+        Serial.printf("[DISTANCE_DEBUG] Ungültiger Max-Distanz-Wert: %d cm. Verwende Default (%d cm).\n", maxDistance, DEFAULT_MAX_DISTANCE_CM);
         maxDistance = DEFAULT_MAX_DISTANCE_CM;
     }
 
     preferences.begin("lichtschranke", false);
-    preferences.putFloat("maxDistance", maxDistance);
+    preferences.putInt("maxDistance", maxDistance);
     preferences.end();
 
-    cachedMaxDistanceCache = maxDistance;
+    Serial.printf("[DISTANCE_DEBUG] Max-Distanz gesetzt auf: %d cm\n", maxDistance);
 
-    Serial.printf("[DISTANCE_DEBUG] Max-Distanz gesetzt auf: %.2f cm\n", maxDistance);
-
-    // Aktualisiere den Cache im Sensor-Modul für bessere Performance
+    // Sensor-Cache aktualisieren
     updateDistanceCache();
 }
 

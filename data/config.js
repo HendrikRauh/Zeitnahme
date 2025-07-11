@@ -209,8 +209,8 @@ function updateStatusDisplay(status) {
 }
 
 // Distance Management
-let originalMinDistance = 2.0;
-let originalMaxDistance = 100.0;
+let originalMinDistance = 2;
+let originalMaxDistance = 100;
 
 function loadDistanceSettings() {
     fetch("/get_distance_settings")
@@ -233,7 +233,7 @@ function loadDistanceSettings() {
 function updateMinDistanceButton() {
     const input = document.getElementById("minDistanceInput");
     const button = document.getElementById("saveMinDistanceBtn");
-    const currentValue = parseFloat(input.value);
+    const currentValue = parseInt(input.value);
 
     if (isNaN(currentValue) || currentValue === originalMinDistance) {
         button.disabled = true;
@@ -249,7 +249,7 @@ function updateMinDistanceButton() {
 function updateMaxDistanceButton() {
     const input = document.getElementById("maxDistanceInput");
     const button = document.getElementById("saveMaxDistanceBtn");
-    const currentValue = parseFloat(input.value);
+    const currentValue = parseInt(input.value);
 
     if (isNaN(currentValue) || currentValue === originalMaxDistance) {
         button.disabled = true;
@@ -263,10 +263,10 @@ function updateMaxDistanceButton() {
 }
 
 function saveMinDistance() {
-    let minDistance = parseFloat(
+    let minDistance = parseInt(
         document.getElementById("minDistanceInput").value
     );
-    let maxDistance = parseFloat(
+    let maxDistance = parseInt(
         document.getElementById("maxDistanceInput").value
     );
 
@@ -314,10 +314,10 @@ function saveMinDistance() {
 }
 
 function saveMaxDistance() {
-    let minDistance = parseFloat(
+    let minDistance = parseInt(
         document.getElementById("minDistanceInput").value
     );
-    let maxDistance = parseFloat(
+    let maxDistance = parseInt(
         document.getElementById("maxDistanceInput").value
     );
 

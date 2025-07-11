@@ -37,16 +37,10 @@ void broadcastMasterStatus()
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
 {
-  // Optimierte JSON-String-Erstellung
-  static String lastStatusJson = "";
+  // Immer senden - kein Caching für Status-Updates
   String currentJson = "{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}";
-
-  // Nur senden wenn sich tatsächlich etwas geändert hat
-  if (currentJson != lastStatusJson)
-  {
-    wsBrodcastMessage(currentJson);
-    lastStatusJson = currentJson;
-  }
+  wsBrodcastMessage(currentJson);
+  Serial.printf("[WS_DEBUG] Status gesendet: %s\n", statusToString(status).c_str());
 }
 
 // Passe die WebSocket-Init an:
@@ -207,18 +201,18 @@ request->send(400, "text/plain", "Missing MAC or role");
   server.on("/get_distance_settings", HTTP_GET, [](AsyncWebServerRequest *request)
             {
 Serial.println("[WEB] GET /get_distance_settings aufgerufen.");
-float minDistance = getMinDistance();
-float maxDistance = getMaxDistance();
-String json = "{\"minDistance\":" + String(minDistance, 1) + ",\"maxDistance\":" + String(maxDistance, 1) + "}";
+int minDistance = getMinDistance();
+int maxDistance = getMaxDistance();
+String json = "{\"minDistance\":" + String(minDistance) + ",\"maxDistance\":" + String(maxDistance) + "}";
 request->send(200, "application/json", json); });
 
   server.on("/set_min_distance", HTTP_POST, [](AsyncWebServerRequest *request)
             {
 Serial.println("[WEB] POST /set_min_distance aufgerufen.");
 if (request->hasParam("minDistance", true)) {
-  float minDistance = request->getParam("minDistance", true)->value().toFloat();
+  int minDistance = request->getParam("minDistance", true)->value().toInt();
   setMinDistance(minDistance);
-  String msg = "Min-Distanz gesetzt auf " + String(minDistance, 1) + " cm";
+  String msg = "Min-Distanz gesetzt auf " + String(minDistance) + " cm";
   request->send(200, "text/plain", msg);
 } else {
   request->send(400, "text/plain", "Fehlender Min-Distanz-Parameter");
@@ -228,9 +222,9 @@ if (request->hasParam("minDistance", true)) {
             {
 Serial.println("[WEB] POST /set_max_distance aufgerufen.");
 if (request->hasParam("maxDistance", true)) {
-  float maxDistance = request->getParam("maxDistance", true)->value().toFloat();
+  int maxDistance = request->getParam("maxDistance", true)->value().toInt();
   setMaxDistance(maxDistance);
-  String msg = "Max-Distanz gesetzt auf " + String(maxDistance, 1) + " cm";
+  String msg = "Max-Distanz gesetzt auf " + String(maxDistance) + " cm";
   request->send(200, "text/plain", msg);
 } else {
   request->send(400, "text/plain", "Fehlender Max-Distanz-Parameter");

@@ -87,6 +87,12 @@
                 "focus": true,
                 "panel": "dedicated"
             }
+        },
+        {
+            "label": "Update all devices",
+            "command": "./update.sh",
+            "type": "shell",
+            "problemMatcher": []
         }
     ]
 }

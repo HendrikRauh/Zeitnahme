@@ -82,9 +82,10 @@ void lichtschrankeTask(void *pvParameters)
             }
         }
 
-        // WebSocket-Broadcast nur bei wichtigen Änderungen
-        if (status != prevStatus && (status == STATUS_TRIGGERED || prevStatus == STATUS_TRIGGERED))
+        // WebSocket-Broadcast bei allen wichtigen Status-Änderungen
+        if (status != prevStatus)
         {
+            Serial.printf("[STATUS] Status-Wechsel: %d -> %d\n", prevStatus, status);
             broadcastLichtschrankeStatus(status);
         }
 

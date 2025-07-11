@@ -24,8 +24,8 @@ MeasureResult measure();
 
 void updateDistanceCache();
 
-float getCurrentMinDistance();
+int getCurrentMinDistance();
 
-float getCurrentMaxDistance();
+int getCurrentMaxDistance();
 
 #endif

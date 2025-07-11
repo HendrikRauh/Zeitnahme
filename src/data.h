@@ -61,10 +61,10 @@ bool changeOtherDevice(const uint8_t *mac, Role role);
 void changeOwnRole(Role newRole);
 
 // Sensor Distance Settings Funktionen
-float getMinDistance();
-float getMaxDistance();
-void setMinDistance(float minDistance);
-void setMaxDistance(float maxDistance);
+int getMinDistance();
+int getMaxDistance();
+void setMinDistance(int minDistance);
+void setMaxDistance(int maxDistance);
 
 extern std::deque<RaceEntry> raceQueue;
 extern std::vector<DeviceInfo> savedDevices;
