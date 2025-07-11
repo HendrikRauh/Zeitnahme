@@ -13,45 +13,46 @@ void handleSaveDeviceMessage(const uint8_t *incomingData)
     // WebSocket-Updates senden
     String json = "{\"mac\":\"" + macToString(msg.targetMac) + "\",\"role\":\"" + roleToString(msg.targetRole) + "\"}";
     wsBrodcastMessage("{\"type\":\"device\",\"data\":" + json + "}");
-    
+
     // Prüfe, ob die Nachricht für dieses Gerät bestimmt ist
-    if (memcmp(msg.targetMac, getMacAddress(), 6) == 0) {
+    if (memcmp(msg.targetMac, getMacAddress(), 6) == 0)
+    {
         // Die Nachricht ist für uns bestimmt
-        if (msg.targetRole != ROLE_IGNORE) {
+        if (msg.targetRole != ROLE_IGNORE)
+        {
             Serial.printf("[ROLE_DEBUG] Rollenänderungsanfrage empfangen: neue Rolle %s\n", roleToString(msg.targetRole).c_str());
             addSavedDevice(msg.senderMac, msg.senderRole);
             changeOwnRole(msg.targetRole);
-        } else {
+        }
+        else
+        {
             Serial.println("[ROLE_DEBUG] Entfernungsanfrage empfangen - ignoriere Sender");
             removeSavedDevice(msg.senderMac);
         }
-    } else {
+    }
+    else
+    {
         Serial.printf("[ROLE_DEBUG] SaveDeviceMessage für anderes Gerät empfangen: %s (ignoriert)\n", macToString(msg.targetMac).c_str());
     }
 }
 
 void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-    Serial.printf("[ESP_NOW_DEBUG] Nachricht empfangen: Länge=%d, von=%s\n", len, macToString(mac).c_str());
-    
     if (len == 9 && memcmp(incomingData, "WHOAREYOU", 9) == 0)
     {
-        Serial.println("[ESP_NOW_DEBUG] WHOAREYOU-Nachricht empfangen");
         sendIdentity(mac);
     }
     else if (len == sizeof(DeviceInfo) || len == sizeof(SaveDeviceMessage))
     {
         // Da beide Messages die gleiche Größe haben, prüfen wir das messageType Feld
-        SaveDeviceMessage* saveMsg = (SaveDeviceMessage*)incomingData;
+        SaveDeviceMessage *saveMsg = (SaveDeviceMessage *)incomingData;
         if (saveMsg->messageType == MSG_TYPE_SAVE_DEVICE)
         {
-            Serial.printf("[ESP_NOW_DEBUG] SaveDeviceMessage empfangen (Größe: %d)\n", sizeof(SaveDeviceMessage));
             handleSaveDeviceMessage(incomingData);
         }
         else
         {
             // Es ist eine DeviceInfo-Nachricht
-            Serial.printf("[ESP_NOW_DEBUG] DeviceInfo-Nachricht empfangen (Größe: %d)\n", sizeof(DeviceInfo));
             DeviceInfo msg;
             memcpy(&msg, incomingData, sizeof(msg));
             handleIdentityMessage(msg.mac, msg.role);
@@ -59,7 +60,6 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     }
     else if (len == sizeof(RaceEventMessage))
     {
-        Serial.printf("[ESP_NOW_DEBUG] RaceEventMessage empfangen (Größe: %d)\n", sizeof(RaceEventMessage));
         RaceEventMessage msg;
         memcpy(&msg, incomingData, sizeof(msg));
 
@@ -94,7 +94,6 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         }
         else if (messageType == MSG_TYPE_TIME_SYNC_REQUEST && len == sizeof(TimeSyncRequestMessage))
         {
-            Serial.printf("[ESP_NOW_DEBUG] TimeSyncRequestMessage empfangen\n");
             TimeSyncRequestMessage msg;
             memcpy(&msg, incomingData, sizeof(msg));
             handleTimeSyncRequest(msg.requesterMac, msg.requestTime);
@@ -110,7 +109,6 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         uint8_t messageType = incomingData[0];
         if (messageType == MSG_TYPE_TIME_SYNC_RESPONSE)
         {
-            Serial.printf("[ESP_NOW_DEBUG] TimeSyncResponseMessage empfangen\n");
             TimeSyncResponseMessage msg;
             memcpy(&msg, incomingData, sizeof(msg));
             unsigned long roundTripTime = millis() - msg.originalRequestTime;
@@ -142,7 +140,6 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         uint8_t messageType = incomingData[0];
         if (messageType == MSG_TYPE_FULL_SYNC)
         {
-            Serial.printf("[ESP_NOW_DEBUG] FullSyncMessage empfangen\n");
             FullSyncMessage msg;
             memcpy(&msg, incomingData, sizeof(msg));
             handleFullSync((uint8_t *)&msg, len);
@@ -199,17 +196,12 @@ void sendDiscoveryMessage()
 
 bool tellOtherDeviceToChangeHisRole(const uint8_t *targetMac, Role newRole)
 {
-    Serial.printf("[ESP_NOW_DEBUG] Sende Rollenänderungsanfrage an %s: neue Rolle %s\n", 
-                  macToString(targetMac).c_str(), roleToString(newRole).c_str());
-    
     SaveDeviceMessage msg;
     msg.messageType = MSG_TYPE_SAVE_DEVICE;
     memcpy(msg.targetMac, targetMac, 6);
     msg.targetRole = newRole;
     memcpy(msg.senderMac, getMacAddress(), 6);
     msg.senderRole = getOwnRole();
-
-    Serial.printf("[ESP_NOW_DEBUG] SaveDeviceMessage Größe: %d bytes\n", sizeof(msg));
 
     esp_now_peer_info_t peerInfo = {};
 
@@ -224,7 +216,6 @@ bool tellOtherDeviceToChangeHisRole(const uint8_t *targetMac, Role newRole)
     esp_err_t result = esp_now_send(targetMac, (uint8_t *)&msg, sizeof(msg));
     if (result == ESP_OK)
     {
-        Serial.printf("[ESP_NOW_DEBUG] Rollenänderungsanfrage erfolgreich gesendet an %s\n", macToString(targetMac).c_str());
         return true;
     }
     else
@@ -240,7 +231,7 @@ void tellOthersMyRoleChanged()
 
     // Sammle alle bekannten MAC-Adressen (sowohl gespeicherte als auch entdeckte)
     std::set<String> sentToMacs;
-    
+
     // Sende an alle gespeicherten Geräte
     for (const auto &dev : getSavedDevices())
     {
@@ -248,7 +239,7 @@ void tellOthersMyRoleChanged()
         sentToMacs.insert(macToString(dev.mac));
         Serial.printf("[ROLE_DEBUG] Identity an gespeichertes Gerät gesendet: %s\n", macToString(dev.mac).c_str());
     }
-    
+
     // Sende auch an alle entdeckten Geräte (die noch nicht erreicht wurden)
     for (const auto &dev : getDiscoveredDevices())
     {

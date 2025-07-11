@@ -1,4 +1,5 @@
 #include <Utility.h>
+#include <server.h>
 
 String roleToString(Role role)
 {
@@ -106,9 +107,8 @@ String statusToString(LichtschrankeStatus status)
 
 void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
 {
-    Serial.printf("[ROLE_DEBUG] Identity empfangen von MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
-
     bool hasChanges = false;
+    bool roleChanged = false;
 
     if (checkIfDeviceIsSaved(senderMac))
     {
@@ -119,17 +119,16 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
             {
                 if (dev.role != senderRole)
                 {
-                    Serial.printf("[ROLE_DEBUG] Rolle von Gerät %s hat sich geändert: %s -> %s\n",
-                                  macToString(senderMac).c_str(), roleToString(dev.role).c_str(), roleToString(senderRole));
                     changeSavedDevice(senderMac, senderRole);
                     hasChanges = true;
+                    roleChanged = true;
+                    
+                    // WebSocket-Update für Rollenbestätigung senden
+                    String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
+                    wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
                 }
                 else
                 {
-                    Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt mit korrekter Rolle %s\n",
-                                  macToString(senderMac).c_str(), roleToString(senderRole));
-
-                    // Aktualisiere lastSeen für bekannte Geräte OHNE Zeit-Offset zu ändern
                     // Markiere Gerät als online in savedDevices
                     for (auto &device : savedDevices)
                     {
@@ -137,8 +136,6 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                         {
                             device.isOnline = true;
                             device.lastSeen = millis();
-                            Serial.printf("[ROLE_DEBUG] Gerät %s als online markiert (Zeit-Offset beibehalten: %ld ms)\n",
-                                          macToString(senderMac).c_str(), device.timeOffset);
                             break;
                         }
                     }
@@ -152,32 +149,34 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
     // Aktualisiere entdeckte Geräte Liste
     if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
-        Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
         addDiscoveredDevice(senderMac, senderRole);
         hasChanges = true;
     }
-    else 
+    else
     {
         // Prüfe, ob sich die Rolle in den entdeckten Geräten geändert hat
-        bool roleChanged = false;
+        bool discoveredRoleChanged = false;
         for (const auto &dev : getDiscoveredDevices())
         {
             if (memcmp(dev.mac, senderMac, 6) == 0)
             {
                 if (dev.role != senderRole)
                 {
-                    Serial.printf("[ROLE_DEBUG] Rolle in entdeckten Geräten wird aktualisiert: %s -> %s\n", 
-                                  roleToString(dev.role).c_str(), roleToString(senderRole));
                     updateDiscoveredDeviceRole(senderMac, senderRole);
                     hasChanges = true;
+                    if (!roleChanged) // Nur senden wenn nicht bereits von savedDevices gesendet
+                    {
+                        // WebSocket-Update für Rollenbestätigung senden
+                        String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
+                        wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
+                    }
                 }
-                roleChanged = true;
+                discoveredRoleChanged = true;
                 break;
             }
         }
-        if (!roleChanged)
+        if (!discoveredRoleChanged)
         {
-            Serial.printf("[ROLE_DEBUG] Füge entdecktes Gerät hinzu: MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
             addDiscoveredDevice(senderMac, senderRole);
             hasChanges = true;
         }

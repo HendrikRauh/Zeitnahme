@@ -152,7 +152,6 @@ bool checkIfDeviceIsDiscoveredList(const uint8_t *mac)
 
 void addDiscoveredDevice(const uint8_t *mac, Role role)
 {
-    Serial.printf("[ROLE_DEBUG] Füge entdecktes Gerät hinzu: MAC %s, Rolle %s\n", macToString(mac).c_str(), roleToString(role).c_str());
     auto it = std::find_if(discoveredDevices.begin(), discoveredDevices.end(),
                            [&](const DeviceInfo &d)
                            { return memcmp(d.mac, mac, 6) == 0; });
@@ -177,7 +176,6 @@ void addDiscoveredDevice(const uint8_t *mac, Role role)
 
 void addSavedDevice(const uint8_t *mac, Role role)
 {
-    Serial.printf("[ROLE_DEBUG] Füge gespeichertes Gerät hinzu: MAC %s, Rolle %s\n", macToString(mac).c_str(), roleToString(role).c_str());
     auto it = std::find_if(savedDevices.begin(), savedDevices.end(),
                            [&](const DeviceInfo &d)
                            { return memcmp(d.mac, mac, 6) == 0; });
