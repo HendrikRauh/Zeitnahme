@@ -1,8 +1,13 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-constexpr unsigned long COOLDOWN_MS = 3000;
-constexpr float MAX_DISTANCE_CM = 400.0f; // Maximalwert des Ultraschallsensors
+#ifndef COOLDOWN_MS
+#define COOLDOWN_MS 3000UL
+#endif
+
+#ifndef MAX_DISTANCE_CM
+#define MAX_DISTANCE_CM 400.0f
+#endif
 
 struct MeasureResult
 {

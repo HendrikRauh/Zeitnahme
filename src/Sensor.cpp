@@ -2,8 +2,12 @@
 #include <Arduino.h>
 #include <data.h>
 
-constexpr uint8_t TRIG_PIN = 12;
-constexpr uint8_t ECHO_PIN = 13;
+#ifndef TRIG_PIN
+#define TRIG_PIN 12
+#endif
+#ifndef ECHO_PIN
+#define ECHO_PIN 13
+#endif
 
 int cachedMinDistance = 2;   // Cache für bessere Performance
 int cachedMaxDistance = 100; // Cache für bessere Performance
@@ -19,6 +23,7 @@ float getDistanceCM()
 
     // Noch kürzerer Timeout für maximale Reaktionszeit
     long duration = pulseIn(ECHO_PIN, HIGH, 20000); // 20ms Timeout
+
     if (duration == 0)
         return MAX_DISTANCE_CM;
 

@@ -274,8 +274,13 @@ void clearDiscoveredDevices()
 }
 
 // Sensor Distance Settings Funktionen
-constexpr int DEFAULT_MIN_DISTANCE_CM = 2;
-constexpr int DEFAULT_MAX_DISTANCE_CM = 100;
+
+#ifndef DEFAULT_MIN_DISTANCE_CM
+#define DEFAULT_MIN_DISTANCE_CM 2
+#endif
+#ifndef DEFAULT_MAX_DISTANCE_CM
+#define DEFAULT_MAX_DISTANCE_CM 100
+#endif
 
 int getMinDistance()
 {

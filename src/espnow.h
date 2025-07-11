@@ -27,11 +27,13 @@ struct RaceEntry
 #define MSG_TYPE_FULL_SYNC 5
 #define MSG_TYPE_SAVE_DEVICE 6
 
+#ifndef ESP_NOW_CHANNEL
 #define ESP_NOW_CHANNEL 8
+#endif
 
 struct SaveDeviceMessage
 {
-    uint8_t messageType;    // MSG_TYPE_SAVE_DEVICE = 6
+    uint8_t messageType; // MSG_TYPE_SAVE_DEVICE = 6
     uint8_t targetMac[6];
     Role targetRole;
     uint8_t senderMac[6];

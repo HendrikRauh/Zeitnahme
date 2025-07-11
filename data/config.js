@@ -9,6 +9,22 @@ let ws = new WebSocket("ws://" + location.host + "/ws");
 
 // Initialisierung
 document.addEventListener("DOMContentLoaded", function () {
+    // Felder und Buttons initial leeren und deaktivieren
+    const minInput = document.getElementById("minDistanceInput");
+    const maxInput = document.getElementById("maxDistanceInput");
+    const minBtn = document.getElementById("saveMinDistanceBtn");
+    const maxBtn = document.getElementById("saveMaxDistanceBtn");
+    if (minInput) {
+        minInput.value = "";
+        minInput.placeholder = "...";
+    }
+    if (maxInput) {
+        maxInput.value = "";
+        maxInput.placeholder = "...";
+    }
+    if (minBtn) minBtn.disabled = true;
+    if (maxBtn) maxBtn.disabled = true;
+
     // Geräteinformationen laden
     loadDeviceInfo();
 
@@ -222,10 +238,14 @@ function loadDistanceSettings() {
         .then((data) => {
             originalMinDistance = data.minDistance;
             originalMaxDistance = data.maxDistance;
-            document.getElementById("minDistanceInput").value =
-                data.minDistance;
-            document.getElementById("maxDistanceInput").value =
-                data.maxDistance;
+            const minInput = document.getElementById("minDistanceInput");
+            const maxInput = document.getElementById("maxDistanceInput");
+            minInput.value = data.minDistance;
+            maxInput.value = data.maxDistance;
+            minInput.placeholder = data.minDistance;
+            maxInput.placeholder = data.maxDistance;
+            document.getElementById("saveMinDistanceBtn").disabled = false;
+            document.getElementById("saveMaxDistanceBtn").disabled = false;
             updateMinDistanceButton();
             updateMaxDistanceButton();
         })
