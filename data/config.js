@@ -46,7 +46,8 @@ function showVersion() {
             ).textContent = `FW: ${fwHash} | FS: ${fsHash}`;
         })
         .catch(() => {
-            document.getElementById("version-text").textContent = "FW: error | FS: error";
+            document.getElementById("version-text").textContent =
+                "FW: error | FS: error";
         });
 }
 
