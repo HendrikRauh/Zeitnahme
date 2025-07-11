@@ -12,7 +12,7 @@ char macStr[18] = {0};
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   initDeviceInfo();
   initWebpage();
   initEspNow();
@@ -21,11 +21,11 @@ void setup()
   initWebsocket();
   initLichtschrankeTask();
 
-  // Gestaffelte Initialisierung basierend auf MAC-Adresse
+  // Gestaffelte Initialisierung basierend auf MAC-Adresse (reduziert für bessere Performance)
   // Geräte mit niedrigerer MAC warten weniger
   const uint8_t *myMac = getMacAddress();
   uint32_t macSum = myMac[2] + myMac[3] + myMac[4] + myMac[5];
-  uint32_t delayMs = (macSum % 5) * 1000; // 0-4 Sekunden Verzögerung
+  uint32_t delayMs = (macSum % 3) * 500; // 0-1 Sekunden Verzögerung (reduziert)
 
   Serial.printf("[MASTER_DEBUG] Warte %lu ms vor Master-Bestimmung (MAC-basiert)\n", delayMs);
   delay(delayMs);
@@ -36,8 +36,8 @@ void setup()
   // Master-Task starten
   initMasterTask();
 
-  // Weitere Verzögerung für Netzwerk-Stabilisierung
-  delay(3000);
+  // Reduzierte Verzögerung für Netzwerk-Stabilisierung
+  delay(1000); // Reduziert von 3000ms auf 1000ms
 
   // Zeit-Synchronisation starten (falls Slave)
   if (isSlave())
@@ -51,6 +51,6 @@ void setup()
 void loop()
 {
   // Die Hauptlogik läuft jetzt in separaten Tasks
-  // Hier können andere Wartungsaufgaben ausgeführt werden
-  delay(1000);
+  // Minimale Verzögerung für bessere Performance
+  delay(100);
 }

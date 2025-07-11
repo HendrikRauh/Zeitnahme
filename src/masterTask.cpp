@@ -12,15 +12,15 @@ void masterTask(void *pvParameters)
     {
         unsigned long now = millis();
 
-        // Heartbeat senden (Master)
-        if (isMaster() && (now - lastHeartbeat > 5000))
+        // Heartbeat senden (Master) - reduziert für weniger Störungen
+        if (isMaster() && (now - lastHeartbeat > 10000)) // 10 Sekunden statt 5
         {
             sendHeartbeat();
             lastHeartbeat = now;
         }
 
-        // Full-Sync senden (Master) - alle 10 Sekunden
-        if (isMaster() && (now - lastFullSync > 10000))
+        // Full-Sync senden (Master) - reduziert für weniger Störungen
+        if (isMaster() && (now - lastFullSync > 15000)) // 15 Sekunden statt 10
         {
             sendFullSync();
             lastFullSync = now;
@@ -33,8 +33,8 @@ void masterTask(void *pvParameters)
             lastMasterCheck = now;
         }
 
-        // Zeit-Synchronisation (Slave)
-        if (isSlave() && (now - lastTimeSync > 30000))
+        // Zeit-Synchronisation (Slave) - reduziert für weniger Störungen
+        if (isSlave() && (now - lastTimeSync > 60000)) // 60 Sekunden statt 30
         {
             syncTimeWithMaster();
             lastTimeSync = now;

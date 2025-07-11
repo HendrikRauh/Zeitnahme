@@ -17,28 +17,41 @@ std::deque<RaceEntry> raceQueue;
 
 Preferences preferences;
 
+// Performance-Optimierung: Caching für häufig verwendete Werte
+static Role cachedOwnRole = ROLE_IGNORE; // Verwende ROLE_IGNORE als Default
+static bool roleLoaded = false;
+static float cachedMinDistanceCache = 2.0f;
+static float cachedMaxDistanceCache = 100.0f;
+static bool distanceCacheLoaded = false;
+
 Role getOwnRole()
 {
+    // Cache für bessere Performance
+    if (roleLoaded)
+    {
+        return cachedOwnRole;
+    }
+
     preferences.begin("lichtschranke", true);
     int role = preferences.getUInt("role", 1);
-    Serial.printf("[ROLE_DEBUG] Lade eigene Rolle aus Preferences (%d)\n", role);
     preferences.end();
-    Serial.printf("[ROLE_DEBUG] Geladene eigene Rolle: %s (int: %d)\n", roleToString(static_cast<Role>(role)).c_str(), role);
-    return static_cast<Role>(role);
+    cachedOwnRole = static_cast<Role>(role);
+    roleLoaded = true;
+    return cachedOwnRole;
 }
 
 void saveOwnRole(Role role)
 {
-    Serial.printf("[ROLE_DEBUG] Speichere eigene Rolle: %s (int: %d)\n", roleToString(role).c_str(), static_cast<int>(role));
     preferences.begin("lichtschranke", false);
     preferences.putUInt("role", static_cast<int>(role));
     preferences.end();
-    Serial.printf("[ROLE_DEBUG] Eigene Rolle geändert zu %s\n", roleToString(role).c_str());
+    // Cache aktualisieren
+    cachedOwnRole = role;
+    roleLoaded = true;
 }
 
 void loadDeviceListFromPreferences()
 {
-    Serial.println("[ROLE_DEBUG] Lade gespeicherte Geräte aus Preferences.");
     preferences.begin("lichtschranke", true);
     String jsonStr = preferences.getString("devices", "[]");
     preferences.end();
@@ -59,7 +72,6 @@ void loadDeviceListFromPreferences()
             info.isOnline = false;
             info.lastSeen = 0;
             savedDevices.push_back(info);
-            Serial.printf("[ROLE_DEBUG] Gerät aus Preferences geladen: MAC %s, Rolle %s\n", macToString(info.mac).c_str(), roleToString(info.role).c_str());
 
             addDeviceToPeer(info.mac);
         }
@@ -72,7 +84,6 @@ void loadDeviceListFromPreferences()
 
 void writeDeviceListToPreferences()
 {
-    Serial.println("[ROLE_DEBUG] Schreibe gespeicherte Geräteliste in Preferences.");
     JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
     for (const auto &dev : savedDevices)
@@ -82,14 +93,12 @@ void writeDeviceListToPreferences()
         JsonObject obj = arr.add<JsonObject>();
         obj["mac"] = macToString(dev.mac);
         obj["role"] = roleToString(dev.role);
-        Serial.printf("[ROLE_DEBUG] Gerät für Speicherung vorbereitet: MAC %s, Rolle %s\n", macToString(dev.mac).c_str(), roleToString(dev.role).c_str());
     }
     String jsonStr;
     serializeJson(arr, jsonStr);
     preferences.begin("lichtschranke", false);
     preferences.putString("devices", jsonStr);
     preferences.end();
-    Serial.printf("[ROLE_DEBUG] Geräteliste erfolgreich gespeichert: %s\n", jsonStr.c_str());
 }
 
 void resetAll()
@@ -265,19 +274,34 @@ constexpr float DEFAULT_MAX_DISTANCE_CM = 100.0f;
 
 float getMinDistance()
 {
+    if (distanceCacheLoaded)
+    {
+        Serial.printf("[DISTANCE_DEBUG] Verwende gecachte Min-Distanz: %.2f cm\n", cachedMinDistanceCache);
+        return cachedMinDistanceCache;
+    }
+
     preferences.begin("lichtschranke", true);
     float minDistance = preferences.getFloat("minDistance", DEFAULT_MIN_DISTANCE_CM);
     preferences.end();
+    cachedMinDistanceCache = minDistance;
+    distanceCacheLoaded = true;
     Serial.printf("[DISTANCE_DEBUG] Min-Distanz geladen: %.2f cm\n", minDistance);
     return minDistance;
 }
 
 float getMaxDistance()
 {
+    // Cache für bessere Performance
+    if (distanceCacheLoaded)
+    {
+        return cachedMaxDistanceCache;
+    }
+
     preferences.begin("lichtschranke", true);
     float maxDistance = preferences.getFloat("maxDistance", DEFAULT_MAX_DISTANCE_CM);
     preferences.end();
-    Serial.printf("[DISTANCE_DEBUG] Max-Distanz geladen: %.2f cm\n", maxDistance);
+    cachedMaxDistanceCache = maxDistance;
+    distanceCacheLoaded = true;
     return maxDistance;
 }
 
@@ -292,6 +316,8 @@ void setMinDistance(float minDistance)
     preferences.begin("lichtschranke", false);
     preferences.putFloat("minDistance", minDistance);
     preferences.end();
+
+    cachedMinDistanceCache = minDistance;
 
     Serial.printf("[DISTANCE_DEBUG] Min-Distanz gesetzt auf: %.2f cm\n", minDistance);
 
@@ -310,6 +336,8 @@ void setMaxDistance(float maxDistance)
     preferences.begin("lichtschranke", false);
     preferences.putFloat("maxDistance", maxDistance);
     preferences.end();
+
+    cachedMaxDistanceCache = maxDistance;
 
     Serial.printf("[DISTANCE_DEBUG] Max-Distanz gesetzt auf: %.2f cm\n", maxDistance);
 
@@ -710,7 +738,7 @@ void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, uns
                   macToString(startDevice).c_str(), startTime, raceQueue.size());
 
     broadcastRaceUpdate();
-    
+
     // Zähle nur laufende Rennen für die Anzeige
     int runningRaces = 0;
     for (const auto &race : raceQueue)
@@ -756,7 +784,7 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
     {
         const auto &race = raceQueue[i];
         Serial.printf("[MASTER_DEBUG] Rennen %d: Start=%s, Beendet=%s, Zeit=%lu\n",
-                      i, macToString(race.startDevice).c_str(), 
+                      i, macToString(race.startDevice).c_str(),
                       race.isFinished ? "Ja" : "Nein", race.startTime);
     }
 
@@ -802,7 +830,7 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
 
             broadcastRaceUpdate();
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(race.duration) + "}");
-            
+
             // Aktualisiere Laufzähler nach dem Beenden des Rennens
             int runningRaces = 0;
             for (const auto &raceEntry : raceQueue)
@@ -811,7 +839,7 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
                     runningRaces++;
             }
             wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
-            
+
             break;
         }
     }
@@ -840,7 +868,7 @@ void cleanupFinishedRaces()
     auto now = millis();
     auto it = raceQueue.begin();
     bool removedAny = false;
-    
+
     while (it != raceQueue.end())
     {
         if (it->isFinished && (now - it->finishTime > 15000)) // 15 Sekunden (reduziert)
@@ -870,7 +898,7 @@ void cleanupFinishedRaces()
     {
         Serial.printf("[MASTER_DEBUG] Cleanup abgeschlossen. Neue Queue-Größe: %d\n", raceQueue.size());
         broadcastRaceUpdate();
-        
+
         // Aktualisiere WebSocket-Clients mit neuem Laufzähler
         int runningRaces = 0;
         for (const auto &race : raceQueue)

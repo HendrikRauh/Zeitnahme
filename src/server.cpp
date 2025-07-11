@@ -37,7 +37,16 @@ void broadcastMasterStatus()
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
 {
-  wsBrodcastMessage("{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}");
+  // Optimierte JSON-String-Erstellung
+  static String lastStatusJson = "";
+  String currentJson = "{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}";
+
+  // Nur senden wenn sich tatsächlich etwas geändert hat
+  if (currentJson != lastStatusJson)
+  {
+    wsBrodcastMessage(currentJson);
+    lastStatusJson = currentJson;
+  }
 }
 
 // Passe die WebSocket-Init an:
@@ -47,27 +56,26 @@ void initWebsocket()
              {
     if (type == WS_EVT_CONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
-      // Status
-      client->text("{\"type\":\"status\",\"status\":\"" + statusToString(getStatus()) + "\"}");
-      // Master-Status
-      String masterJson = "{\"type\":\"master_status\",\"status\":\"" + masterStatusToString(getMasterStatus()) + "\"";
+      
+      // Batch alle Initial-Daten in einer Nachricht für bessere Performance
+      String initialData = "{\"type\":\"initial_state\",\"data\":{";
+      initialData += "\"status\":\"" + statusToString(getStatus()) + "\",";
+      initialData += "\"master_status\":\"" + masterStatusToString(getMasterStatus()) + "\",";
       if (isSlave()) {
-        masterJson += ",\"masterMac\":\"" + macToShortString(getMasterMac()) + "\"";
+        initialData += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
       }
-      masterJson += "}";
-      client->text(masterJson);
-      // Letzte Zeit
-      client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
-      // Gespeicherte Geräte
-      client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
-      // Entdeckte Geräte (kann noch leer sein)
-      client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
+      initialData += "\"lastTime\":" + String(getLastTime()) + ",";
+      initialData += "\"saved_devices\":" + getSavedDevicesJson() + ",";
+      initialData += "\"discovered_devices\":" + getDiscoveredDevicesJson();
+      initialData += "}}";
+      
+      client->text(initialData);
       
       // Sende ALLE aktuellen RAM-Daten an den neuen Client
       updateWebSocketClients();
       
-      // Starte Gerätesuche für diesen Client
-      searchForDevices(); // <-- NEU: Suche direkt beim Connect starten!
+      // Starte Gerätesuche NUR bei Bedarf, nicht automatisch
+      // searchForDevices(); // Entfernt für bessere Performance
     } else if (type == WS_EVT_DISCONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u getrennt.\n", client->id());
     } });
