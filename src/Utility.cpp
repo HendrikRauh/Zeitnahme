@@ -149,11 +149,38 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
         }
     }
 
+    // Aktualisiere entdeckte Geräte Liste
     if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
         Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
         addDiscoveredDevice(senderMac, senderRole);
         hasChanges = true;
+    }
+    else 
+    {
+        // Prüfe, ob sich die Rolle in den entdeckten Geräten geändert hat
+        bool roleChanged = false;
+        for (const auto &dev : getDiscoveredDevices())
+        {
+            if (memcmp(dev.mac, senderMac, 6) == 0)
+            {
+                if (dev.role != senderRole)
+                {
+                    Serial.printf("[ROLE_DEBUG] Rolle in entdeckten Geräten wird aktualisiert: %s -> %s\n", 
+                                  roleToString(dev.role).c_str(), roleToString(senderRole));
+                    updateDiscoveredDeviceRole(senderMac, senderRole);
+                    hasChanges = true;
+                }
+                roleChanged = true;
+                break;
+            }
+        }
+        if (!roleChanged)
+        {
+            Serial.printf("[ROLE_DEBUG] Füge entdecktes Gerät hinzu: MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
+            addDiscoveredDevice(senderMac, senderRole);
+            hasChanges = true;
+        }
     }
 
     // Nur broadcasten wenn es tatsächlich Änderungen gab

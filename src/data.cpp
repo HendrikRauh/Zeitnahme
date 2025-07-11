@@ -1064,3 +1064,20 @@ void handleFullSync(const uint8_t *data, int len)
         }
     }
 }
+
+void updateDiscoveredDeviceRole(const uint8_t *mac, Role newRole)
+{
+    Serial.printf("[ROLE_DEBUG] Aktualisiere Rolle in entdeckten Geräten: MAC %s, neue Rolle %s\n", macToString(mac).c_str(), roleToString(newRole).c_str());
+    for (auto &dev : discoveredDevices)
+    {
+        if (memcmp(dev.mac, mac, 6) == 0)
+        {
+            dev.role = newRole;
+            dev.isOnline = true;
+            dev.lastSeen = millis();
+            Serial.printf("[ROLE_DEBUG] Rolle in entdeckten Geräten erfolgreich aktualisiert\n");
+            return;
+        }
+    }
+    Serial.printf("[ROLE_DEBUG] Gerät %s nicht in entdeckten Geräten gefunden\n", macToString(mac).c_str());
+}

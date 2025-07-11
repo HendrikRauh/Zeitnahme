@@ -48,6 +48,8 @@ bool checkIfDeviceIsDiscoveredList(const uint8_t *mac);
 
 void addDiscoveredDevice(const uint8_t *mac, Role role);
 
+void updateDiscoveredDeviceRole(const uint8_t *mac, Role newRole);
+
 void clearDiscoveredDevices();
 
 void addSavedDevice(const uint8_t *mac, Role role);

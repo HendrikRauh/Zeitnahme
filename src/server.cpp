@@ -180,12 +180,14 @@ tellOtherDeviceToChangeHisRole(mac, ROLE_IGNORE);
 request->send(200, "text/plain", "Gerät entfernt");
 } else {
 Serial.printf("[WEB] Gerät %s soll auf Rolle %s gesetzt werden.\n", macToString(mac).c_str(), roleToString(role).c_str());
-if (changeOtherDevice(mac, role)) { // Sendet Nachricht an das Zielgerät und aktualisiert meine Liste
-  changeSavedDevice(mac, role); // Aktualisiert meine Liste
-request->send(200, "text/plain", "Saved");
+// Sende nur die Nachricht an das andere Gerät, aber ändere noch nicht unsere lokale Liste
+if (changeOtherDevice(mac, role)) { // Sendet nur Nachricht an das Zielgerät
+  // NICHT: changeSavedDevice(mac, role); // Warten auf Identity-Nachricht vom anderen Gerät
+  Serial.printf("[WEB] Anfrage an Gerät %s gesendet. Warte auf Bestätigung via Identity-Nachricht.\n", macToString(mac).c_str());
+  request->send(200, "text/plain", "Anfrage gesendet, warte auf Bestätigung");
 } else {
-Serial.println("[WEB] Fehler beim Speichern/Ändern des Geräts.");
-request->send(400, "text/plain", "Failed to save device");
+Serial.println("[WEB] Fehler beim Senden der Nachricht an das Gerät.");
+request->send(400, "text/plain", "Failed to send message to device");
 }
 }
 } else {

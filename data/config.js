@@ -392,6 +392,13 @@ function showAllDevices() {
     let container = document.getElementById("devicesContainer");
     container.innerHTML = "";
 
+    // Debug: Zeige verfügbare Geräte in der Konsole
+    console.log("Available devices:", {
+        savedDevices: savedDevices,
+        discoveredDevices: discoveredDevices,
+        selfMac: selfMac
+    });
+
     // Eigenes Gerät zuerst (wenn bekannt)
     if (selfMac) {
         let selfDev = { mac: selfMac, role: selfRole };
@@ -467,6 +474,8 @@ function createDeviceItem(container, dev, isSelf) {
 
 function saveDeviceRole(selectElement, mac, isSelf) {
     let role = selectElement.value;
+    
+    console.log("Saving device role:", { mac, role, isSelf });
 
     selectElement.classList.add("pending");
     selectElement.disabled = true;
@@ -494,28 +503,55 @@ function saveDeviceRole(selectElement, mac, isSelf) {
                 alert("Fehler beim Speichern der Rolle");
             });
     } else {
+        const requestBody = "mac=" + encodeURIComponent(mac) + "&role=" + encodeURIComponent(role);
+        console.log("Request body:", requestBody);
+        
         fetch("/change_device", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body:
-                "mac=" +
-                encodeURIComponent(mac) +
-                "&role=" +
-                encodeURIComponent(role),
+            body: requestBody,
         })
             .then((response) => {
-                selectElement.classList.remove("pending");
-                selectElement.disabled = false;
                 if (response.ok) {
-                    showAllDevices();
+                    return response.text().then(message => {
+                        selectElement.classList.remove("pending");
+                        selectElement.disabled = false;
+                        
+                        if (message.includes("Anfrage gesendet")) {
+                            // Zeige temporär an, dass auf Bestätigung gewartet wird
+                            selectElement.style.backgroundColor = "#fff3cd";
+                            selectElement.style.color = "#856404";
+                            console.log("Rollenänderung angefragt, warte auf Bestätigung...");
+                            
+                            // Nach ein paar Sekunden wieder normal anzeigen
+                            setTimeout(() => {
+                                selectElement.style.backgroundColor = "";
+                                selectElement.style.color = "";
+                                showAllDevices(); // Aktualisiere Anzeige
+                            }, 3000);
+                        } else {
+                            showAllDevices();
+                        }
+                    });
                 } else {
-                    alert("Fehler beim Speichern des Geräts");
+                    // Zeige die tatsächliche Fehlermeldung vom Server an
+                    response.text().then(errorMsg => {
+                        selectElement.classList.remove("pending");
+                        selectElement.disabled = false;
+                        console.error("Server error:", errorMsg);
+                        alert("Fehler beim Speichern des Geräts: " + errorMsg);
+                    }).catch(() => {
+                        selectElement.classList.remove("pending");
+                        selectElement.disabled = false;
+                        alert("Fehler beim Speichern des Geräts (unbekannter Fehler)");
+                    });
                 }
             })
-            .catch(() => {
+            .catch((error) => {
                 selectElement.classList.remove("pending");
                 selectElement.disabled = false;
-                alert("Fehler beim Speichern des Geräts");
+                console.error("Network error:", error);
+                alert("Netzwerkfehler beim Speichern des Geräts");
             });
     }
 }
