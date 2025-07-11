@@ -18,6 +18,8 @@ void wsBrodcastMessage(String message);
 
 void broadcastLichtschrankeStatus(LichtschrankeStatus status);
 
+void broadcastMasterStatus();
+
 void broadcastLastTime(unsigned long lastTime);
 
 void broadcastSavedDevices();

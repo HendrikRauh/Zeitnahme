@@ -7,6 +7,7 @@
 #include <data.h>
 
 String roleToString(Role role);
+String masterStatusToString(MasterStatus status);
 Role stringToRole(const String &text);
 String statusToString(LichtschrankeStatus status);
 String macToString(const uint8_t *mac);

@@ -16,18 +16,25 @@ void lichtschrankeTask(void *pvParameters)
         {
             if (getOwnRole() == ROLE_START)
             {
-                addRaceStart(res.time);
-                broadcastRaceEvent(ROLE_START, res.time);
+                if (isMaster())
+                {
+                    masterAddRaceStart(res.time, getMacAddress(), res.time);
+                }
+                else
+                {
+                    slaveHandleRaceStart(res.time, getMacAddress(), res.time);
+                }
             }
             else if (getOwnRole() == ROLE_ZIEL)
             {
-                unsigned long startTime, duration;
-                if (finishRace(res.time, startTime, duration))
+                if (isMaster())
                 {
-                    Serial.printf("[RACE] Zeit: %lu ms (Start: %lu, Ziel: %lu)\n", duration, startTime, res.time);
-                    wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(duration) + "}");
+                    masterFinishRace(res.time, getMacAddress(), res.time);
                 }
-                broadcastRaceEvent(ROLE_ZIEL, res.time);
+                else
+                {
+                    slaveHandleRaceFinish(res.time, getMacAddress(), res.time);
+                }
             }
             lastTrigger = res.time;
             status = STATUS_TRIGGERED;

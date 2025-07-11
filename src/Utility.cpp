@@ -15,6 +15,21 @@ String roleToString(Role role)
     }
 }
 
+String masterStatusToString(MasterStatus status)
+{
+    switch (status)
+    {
+    case MASTER_UNKNOWN:
+        return "Unknown";
+    case MASTER_SLAVE:
+        return "Slave";
+    case MASTER_MASTER:
+        return "Master";
+    default:
+        return "unknown";
+    }
+}
+
 Role stringToRole(const String &text)
 {
     if (text == "Start")
@@ -113,6 +128,21 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                 {
                     Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt mit korrekter Rolle %s\n",
                                   macToString(senderMac).c_str(), roleToString(senderRole));
+
+                    // Aktualisiere lastSeen für bekannte Geräte OHNE Zeit-Offset zu ändern
+                    // Markiere Gerät als online in savedDevices
+                    for (auto &device : savedDevices)
+                    {
+                        if (memcmp(device.mac, senderMac, 6) == 0)
+                        {
+                            device.isOnline = true;
+                            device.lastSeen = millis();
+                            Serial.printf("[ROLE_DEBUG] Gerät %s als online markiert (Zeit-Offset beibehalten: %ld ms)\n",
+                                          macToString(senderMac).c_str(), device.timeOffset);
+                            break;
+                        }
+                    }
+                    hasChanges = true; // Trigger Master-Neubestimmung
                 }
                 break;
             }
@@ -129,8 +159,9 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
     // Nur broadcasten wenn es tatsächlich Änderungen gab
     if (hasChanges)
     {
-        broadcastDiscoveredDevices();
         printDeviceLists();
+        // Master-Status neu bestimmen wenn sich etwas geändert hat
+        determineMaster();
     }
 }
 
@@ -138,33 +169,42 @@ void printDeviceLists()
 {
     Serial.println("\n=== Geräteübersicht ===");
     Serial.printf("Eigene MAC: %s\n", macToString(getMacAddress()).c_str());
+    Serial.printf("Master-Status: %s\n", masterStatusToString(getMasterStatus()).c_str());
+    if (isSlave())
+    {
+        Serial.printf("Master-MAC: %s\n", macToString(getMasterMac()).c_str());
+    }
 
     Serial.println("\nEntdeckte Geräte:");
     for (const auto &dev : getDiscoveredDevices())
     {
-        Serial.printf("%s - Rolle: %s\n",
+        Serial.printf("%s - Rolle: %s, Online: %s, Offset: %ld ms\n",
                       macToString(dev.mac).c_str(),
-                      roleToString(dev.role));
+                      roleToString(dev.role).c_str(),
+                      dev.isOnline ? "Ja" : "Nein",
+                      dev.timeOffset);
     }
 
     Serial.println("\nGespeicherte Geräte:");
     for (const auto &dev : getSavedDevices())
     {
-        Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X - Rolle: %s\n",
+        Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X - Rolle: %s, Online: %s, Offset: %ld ms\n",
                       dev.mac[0], dev.mac[1], dev.mac[2], dev.mac[3], dev.mac[4], dev.mac[5],
-                      roleToString(dev.role).c_str());
+                      roleToString(dev.role).c_str(),
+                      dev.isOnline ? "Ja" : "Nein",
+                      dev.timeOffset);
     }
     Serial.println("=====================\n");
 }
 
 String getSavedDevicesJson()
 {
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
 
     for (const auto &dev : getSavedDevices())
     {
-        JsonObject obj = arr.createNestedObject();
+        JsonObject obj = arr.add<JsonObject>();
 
         obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);
@@ -179,12 +219,12 @@ String getDiscoveredDevicesJson()
 {
     sendDiscoveryMessage();
 
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
 
     for (const auto &dev : getDiscoveredDevices())
     {
-        JsonObject obj = arr.createNestedObject();
+        JsonObject obj = arr.add<JsonObject>();
 
         obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);

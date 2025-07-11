@@ -25,10 +25,17 @@ void resetAll();
 #include <espnow.h>
 #include <deque>
 
+// Forward declarations
+void broadcastMasterStatus();
+struct RaceEntry; // Forward declaration für RaceEntry
+
 struct DeviceInfo
 {
     uint8_t mac[6];
     Role role;
+    long timeOffset;        // Zeit-Offset relativ zum Master in ms
+    bool isOnline;          // Ist das Gerät aktuell erreichbar?
+    unsigned long lastSeen; // Letzter Kontakt (millis())
 };
 
 std::vector<DeviceInfo> getDiscoveredDevices();
@@ -59,17 +66,47 @@ float getMaxDistance();
 void setMinDistance(float minDistance);
 void setMaxDistance(float maxDistance);
 
-struct RaceEntry
-{
-    unsigned long startTime;
-};
-
 extern std::deque<RaceEntry> raceQueue;
+extern std::vector<DeviceInfo> savedDevices;
 
 void addRaceStart(unsigned long startTime);
 bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned long &duration);
 
 // Gibt die aktuelle Anzahl laufender Läufe zurück
 int getLaufCount();
+
+// Master-System Funktionen
+MasterStatus getMasterStatus();
+void setMasterStatus(MasterStatus status);
+bool isMaster();
+bool isSlave();
+uint8_t *getMasterMac();
+void determineMaster();
+void syncTimeWithMaster();
+void handleMasterHeartbeat(const uint8_t *masterMac, unsigned long masterTime);
+void sendHeartbeat();
+void checkMasterOnline();
+
+// Zeit-Synchronisation
+void requestTimeSync();
+void handleTimeSyncRequest(const uint8_t *requesterMac, unsigned long requesterTime);
+void handleTimeSyncResponse(const uint8_t *masterMac, unsigned long masterTime, unsigned long roundTripTime);
+long getTimeOffset(const uint8_t *deviceMac);
+void updateTimeOffset(const uint8_t *deviceMac, long offset);
+
+// Race-Management (nur Master)
+void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, unsigned long localTime);
+void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, unsigned long localTime);
+void broadcastRaceUpdate();
+void handleRaceUpdate(const uint8_t *data, int len);
+void handleFullSync(const uint8_t *data, int len);
+void cleanupFinishedRaces();
+
+// Slave-Funktionen
+void slaveHandleRaceStart(unsigned long startTime, const uint8_t *startDevice, unsigned long localTime);
+void slaveHandleRaceFinish(unsigned long finishTime, const uint8_t *finishDevice, unsigned long localTime);
+
+// WebSocket-Updates
+void updateWebSocketClients();
 
 #endif
