@@ -112,46 +112,32 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
 
     if (checkIfDeviceIsSaved(senderMac))
     {
-        // Prüfe, ob sich die Rolle geändert hat
-        for (const auto &dev : getSavedDevices())
+        for (auto &dev : savedDevices) // Iterate directly over the original vector
         {
             if (memcmp(dev.mac, senderMac, 6) == 0)
             {
+                // Onlinestatus immer aktualisieren
+                dev.isOnline = true;
+                dev.lastSeen = millis();
+                hasChanges = true;
                 if (dev.role != senderRole)
                 {
                     changeSavedDevice(senderMac, senderRole);
-                    hasChanges = true;
                     roleChanged = true;
-
                     // WebSocket-Update für Rollenbestätigung senden (jetzt mit ArduinoJson)
                     JsonDocument doc;
                     doc["type"] = "device_role_changed";
-                    JsonObject data = doc.createNestedObject("data");
+                    JsonObject data = doc["data"].to<JsonObject>();
                     data["mac"] = macToShortString(senderMac);
                     data["role"] = roleToString(senderRole);
                     String json;
                     serializeJson(doc, json);
                     wsBrodcastMessage(json);
                 }
-                else
-                {
-                    // Markiere Gerät als online in savedDevices
-                    for (auto &device : savedDevices)
-                    {
-                        if (memcmp(device.mac, senderMac, 6) == 0)
-                        {
-                            device.isOnline = true;
-                            device.lastSeen = millis();
-                            break;
-                        }
-                    }
-                    hasChanges = true; // Trigger Master-Neubestimmung
-                }
                 break;
             }
         }
     }
-
     // Aktualisiere entdeckte Geräte Liste
     if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
@@ -175,7 +161,7 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                         // WebSocket-Update für Rollenbestätigung senden (jetzt mit ArduinoJson)
                         JsonDocument doc;
                         doc["type"] = "device_role_changed";
-                        JsonObject data = doc.createNestedObject("data");
+                        JsonObject data = doc["data"].to<JsonObject>();
                         data["mac"] = macToShortString(senderMac);
                         data["role"] = roleToString(senderRole);
                         String json;
