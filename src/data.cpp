@@ -174,6 +174,18 @@ void addDiscoveredDevice(const uint8_t *mac, Role role)
     printDeviceLists();
 }
 
+// Hilfsfunktion zur Initialisierung von DeviceInfo
+DeviceInfo makeDeviceInfo(const uint8_t *mac, Role role, bool isOnline, unsigned long lastSeen)
+{
+    DeviceInfo info;
+    memcpy(info.mac, mac, 6);
+    info.role = role;
+    info.timeOffset = 0;
+    info.isOnline = isOnline;
+    info.lastSeen = lastSeen;
+    return info;
+}
+
 void addSavedDevice(const uint8_t *mac, Role role)
 {
     auto it = std::find_if(savedDevices.begin(), savedDevices.end(),
@@ -186,13 +198,7 @@ void addSavedDevice(const uint8_t *mac, Role role)
     }
     else
     {
-        DeviceInfo info;
-        memcpy(info.mac, mac, 6);
-        info.role = role;
-        info.timeOffset = 0;
-        info.isOnline = false;
-        info.lastSeen = 0;
-        savedDevices.push_back(info);
+        savedDevices.push_back(makeDeviceInfo(mac, role, false, 0));
     }
     addDeviceToPeer(mac);
     writeDeviceListToPreferences();
@@ -239,13 +245,7 @@ void changeSavedDevice(const uint8_t *mac, Role role)
     else
     {
         Serial.printf("[ROLE_DEBUG] Gerät %s nicht gefunden, wird hinzugefügt mit Rolle %s\n", macToString(mac).c_str(), roleToString(role).c_str());
-        DeviceInfo info;
-        memcpy(info.mac, mac, 6);
-        info.role = role;
-        info.timeOffset = 0;
-        info.isOnline = false;
-        info.lastSeen = 0;
-        savedDevices.push_back(info);
+        savedDevices.push_back(makeDeviceInfo(mac, role, false, 0));
     }
     writeDeviceListToPreferences();
     printDeviceLists();

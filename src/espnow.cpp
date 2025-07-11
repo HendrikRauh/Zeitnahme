@@ -22,8 +22,9 @@ void handleSaveDeviceMessage(const uint8_t *incomingData)
         {
             Serial.printf("[ROLE_DEBUG] Rollenänderungsanfrage empfangen: neue Rolle %s\n", roleToString(msg.targetRole).c_str());
             addSavedDevice(msg.senderMac, msg.senderRole);
-            // Gegenseitig: Sende eigene Daten zurück, falls noch nicht vorhanden
-            if (!checkIfDeviceIsSaved(msg.targetMac)) {
+            // Gegenseitig: Sende eigene Daten zurück, falls Sender noch nicht gespeichert ist
+            if (!checkIfDeviceIsSaved(msg.senderMac))
+            {
                 tellOtherDeviceToChangeHisRole(msg.senderMac, getOwnRole());
             }
             changeOwnRole(msg.targetRole);

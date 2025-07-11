@@ -112,7 +112,7 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
 
     if (checkIfDeviceIsSaved(senderMac))
     {
-        for (auto &dev : getSavedDevices())
+        for (auto &dev : savedDevices) // Iterate directly over the original vector
         {
             if (memcmp(dev.mac, senderMac, 6) == 0)
             {
