@@ -122,10 +122,16 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                     changeSavedDevice(senderMac, senderRole);
                     hasChanges = true;
                     roleChanged = true;
-                    
-                    // WebSocket-Update für Rollenbestätigung senden
-                    String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
-                    wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
+
+                    // WebSocket-Update für Rollenbestätigung senden (jetzt mit ArduinoJson)
+                    JsonDocument doc;
+                    doc["type"] = "device_role_changed";
+                    JsonObject data = doc.createNestedObject("data");
+                    data["mac"] = macToShortString(senderMac);
+                    data["role"] = roleToString(senderRole);
+                    String json;
+                    serializeJson(doc, json);
+                    wsBrodcastMessage(json);
                 }
                 else
                 {
@@ -166,9 +172,15 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                     hasChanges = true;
                     if (!roleChanged) // Nur senden wenn nicht bereits von savedDevices gesendet
                     {
-                        // WebSocket-Update für Rollenbestätigung senden
-                        String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
-                        wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
+                        // WebSocket-Update für Rollenbestätigung senden (jetzt mit ArduinoJson)
+                        JsonDocument doc;
+                        doc["type"] = "device_role_changed";
+                        JsonObject data = doc.createNestedObject("data");
+                        data["mac"] = macToShortString(senderMac);
+                        data["role"] = roleToString(senderRole);
+                        String json;
+                        serializeJson(doc, json);
+                        wsBrodcastMessage(json);
                     }
                 }
                 discoveredRoleChanged = true;

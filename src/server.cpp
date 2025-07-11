@@ -26,12 +26,15 @@ void broadcastDiscoveredDevices()
 
 void broadcastMasterStatus()
 {
-  String json = "{\"type\":\"master_status\",\"status\":\"" + masterStatusToString(getMasterStatus()) + "\"";
+  JsonDocument doc;
+  doc["type"] = "master_status";
+  doc["status"] = masterStatusToString(getMasterStatus());
   if (isSlave())
   {
-    json += ",\"masterMac\":\"" + macToShortString(getMasterMac()) + "\"";
+    doc["masterMac"] = macToShortString(getMasterMac());
   }
-  json += "}";
+  String json;
+  serializeJson(doc, json);
   wsBrodcastMessage(json);
 }
 
@@ -52,17 +55,23 @@ void initWebsocket()
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
       
       // Batch alle Initial-Daten in einer Nachricht für bessere Performance
-      String initialData = "{\"type\":\"initial_state\",\"data\":{";
-      initialData += "\"status\":\"" + statusToString(getStatus()) + "\",";
-      initialData += "\"master_status\":\"" + masterStatusToString(getMasterStatus()) + "\",";
+      JsonDocument doc;
+      doc["type"] = "initial_state";
+      JsonObject data = doc.createNestedObject("data");
+      data["status"] = statusToString(getStatus());
+      data["master_status"] = masterStatusToString(getMasterStatus());
       if (isSlave()) {
-        initialData += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
+        data["masterMac"] = macToShortString(getMasterMac());
       }
-      initialData += "\"lastTime\":" + String(getLastTime()) + ",";
-      initialData += "\"saved_devices\":" + getSavedDevicesJson() + ",";
-      initialData += "\"discovered_devices\":" + getDiscoveredDevicesJson();
-      initialData += "}}";
-      
+      data["lastTime"] = getLastTime();
+      // saved_devices und discovered_devices sind bereits JSON-Strings, daher als JsonArray parsen
+      JsonDocument savedDoc, discoveredDoc;
+      deserializeJson(savedDoc, getSavedDevicesJson());
+      deserializeJson(discoveredDoc, getDiscoveredDevicesJson());
+      data["saved_devices"] = savedDoc;
+      data["discovered_devices"] = discoveredDoc;
+      String initialData;
+      serializeJson(doc, initialData);
       client->text(initialData);
       
       // Sende ALLE aktuellen RAM-Daten an den neuen Client
@@ -91,37 +100,42 @@ void initWebpage()
   // API-Endpunkte für dynamische Daten (WICHTIG: Vor serveStatic definieren!)
   server.on("/api/device_info", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    String json = "{";
-    json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
-    json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\",";
-    json += "\"masterStatus\":\"" + masterStatusToString(getMasterStatus()) + "\",";
+    JsonDocument doc;
+    doc["selfMac"] = macToShortString(getMacAddress());
+    doc["selfRole"] = roleToString(getOwnRole());
+    doc["masterStatus"] = masterStatusToString(getMasterStatus());
     if (isSlave()) {
-        json += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
+        doc["masterMac"] = macToShortString(getMasterMac());
     }
-    json += "\"firmware_hash\":\"" + ESP.getSketchMD5() + "\"";
-    
+    doc["firmware_hash"] = ESP.getSketchMD5();
     // Filesystem-Hash aus .hash lesen
     if (LittleFS.exists("/.hash")) {
         File file = LittleFS.open("/.hash", "r");
         if (file) {
             String fsHash = file.readString();
-            fsHash.trim(); // Entferne Zeilenumbrüche
-            json += ",\"filesystem_hash\":\"" + fsHash + "\"";
+            fsHash.trim();
+            doc["filesystem_hash"] = fsHash;
             file.close();
         }
     }
-    
-    json += "}";
+    String json;
+    serializeJson(doc, json);
     request->send(200, "application/json", json); });
 
   server.on("/api/last_time", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    String json = "{\"lastTime\":" + String(getLastTime()) + "}";
+    JsonDocument doc;
+    doc["lastTime"] = getLastTime();
+    String json;
+    serializeJson(doc, json);
     request->send(200, "application/json", json); });
 
   server.on("/api/lauf_count", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    String json = "{\"count\":" + String(getLaufCount()) + "}";
+    JsonDocument doc;
+    doc["count"] = getLaufCount();
+    String json;
+    serializeJson(doc, json);
     request->send(200, "application/json", json); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -205,7 +219,11 @@ request->send(400, "text/plain", "Missing MAC or role");
 Serial.println("[WEB] GET /get_distance_settings aufgerufen.");
 int minDistance = getMinDistance();
 int maxDistance = getMaxDistance();
-String json = "{\"minDistance\":" + String(minDistance) + ",\"maxDistance\":" + String(maxDistance) + "}";
+JsonDocument doc;
+doc["minDistance"] = minDistance;
+doc["maxDistance"] = maxDistance;
+String json;
+serializeJson(doc, json);
 request->send(200, "application/json", json); });
 
   server.on("/set_min_distance", HTTP_POST, [](AsyncWebServerRequest *request)
