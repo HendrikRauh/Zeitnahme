@@ -182,8 +182,7 @@ void addSavedDevice(const uint8_t *mac, Role role)
     if (it != savedDevices.end())
     {
         it->role = role;
-        it->isOnline = true;
-        it->lastSeen = millis();
+        // Onlinestatus wird nur durch empfangene Nachrichten gesetzt
     }
     else
     {
@@ -191,8 +190,8 @@ void addSavedDevice(const uint8_t *mac, Role role)
         memcpy(info.mac, mac, 6);
         info.role = role;
         info.timeOffset = 0;
-        info.isOnline = true;
-        info.lastSeen = millis();
+        info.isOnline = false;
+        info.lastSeen = 0;
         savedDevices.push_back(info);
     }
     addDeviceToPeer(mac);
@@ -235,8 +234,7 @@ void changeSavedDevice(const uint8_t *mac, Role role)
     {
         Serial.printf("[ROLE_DEBUG] Rolle für %s wird aktualisiert zu %s\n", macToString(mac).c_str(), roleToString(role));
         it->role = role;
-        it->isOnline = true;
-        it->lastSeen = millis();
+        // Onlinestatus wird nur durch empfangene Nachrichten gesetzt
     }
     else
     {
@@ -245,8 +243,8 @@ void changeSavedDevice(const uint8_t *mac, Role role)
         memcpy(info.mac, mac, 6);
         info.role = role;
         info.timeOffset = 0;
-        info.isOnline = true;
-        info.lastSeen = millis();
+        info.isOnline = false;
+        info.lastSeen = 0;
         savedDevices.push_back(info);
     }
     writeDeviceListToPreferences();
