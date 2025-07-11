@@ -72,26 +72,18 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
                           macToString(msg.senderMac).c_str(), roleToString(msg.senderRole).c_str());
         }
     }
-    else if (len == sizeof(MasterHeartbeatMessage))
+    else if (len == sizeof(MasterHeartbeatMessage) || len == sizeof(TimeSyncRequestMessage))
     {
-        // Prüfe Message-Typ
+        // Prüfe Message-Typ erst, dann handle entsprechend
         uint8_t messageType = incomingData[0];
-        if (messageType == MSG_TYPE_HEARTBEAT)
+        
+        if (messageType == MSG_TYPE_HEARTBEAT && len == sizeof(MasterHeartbeatMessage))
         {
             MasterHeartbeatMessage msg;
             memcpy(&msg, incomingData, sizeof(msg));
             handleMasterHeartbeat(msg.masterMac, msg.masterTime);
         }
-        else
-        {
-            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für Heartbeat-Größe\n", messageType);
-        }
-    }
-    else if (len == sizeof(TimeSyncRequestMessage))
-    {
-        // Prüfe Message-Typ
-        uint8_t messageType = incomingData[0];
-        if (messageType == MSG_TYPE_TIME_SYNC_REQUEST)
+        else if (messageType == MSG_TYPE_TIME_SYNC_REQUEST && len == sizeof(TimeSyncRequestMessage))
         {
             TimeSyncRequestMessage msg;
             memcpy(&msg, incomingData, sizeof(msg));
@@ -99,7 +91,7 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         }
         else
         {
-            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für TimeSyncRequest-Größe\n", messageType);
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für Nachrichtengröße %d\n", messageType, len);
         }
     }
     else if (len == sizeof(TimeSyncResponseMessage))

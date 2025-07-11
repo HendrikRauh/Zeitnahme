@@ -372,7 +372,13 @@ bool finishRace(unsigned long finishTime, unsigned long &startTime, unsigned lon
 
 int getLaufCount()
 {
-    return raceQueue.size();
+    int runningRaces = 0;
+    for (const auto &race : raceQueue)
+    {
+        if (!race.isFinished)
+            runningRaces++;
+    }
+    return runningRaces;
 }
 
 // Master-System Funktionen
@@ -704,7 +710,15 @@ void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, uns
                   macToString(startDevice).c_str(), startTime, raceQueue.size());
 
     broadcastRaceUpdate();
-    wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(raceQueue.size()) + "}");
+    
+    // Zähle nur laufende Rennen für die Anzeige
+    int runningRaces = 0;
+    for (const auto &race : raceQueue)
+    {
+        if (!race.isFinished)
+            runningRaces++;
+    }
+    wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
 }
 
 void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, unsigned long localTime)
@@ -735,6 +749,16 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
 
     Serial.printf("[MASTER_DEBUG] masterFinishRace von %s, Zeit: %lu, Queue-Größe: %d\n",
                   macToString(finishDevice).c_str(), finishTime, raceQueue.size());
+
+    // Debug: Zeige Status aller Rennen in der Queue
+    Serial.printf("[MASTER_DEBUG] Aktuelle Queue-Inhalte:\n");
+    for (size_t i = 0; i < raceQueue.size(); i++)
+    {
+        const auto &race = raceQueue[i];
+        Serial.printf("[MASTER_DEBUG] Rennen %d: Start=%s, Beendet=%s, Zeit=%lu\n",
+                      i, macToString(race.startDevice).c_str(), 
+                      race.isFinished ? "Ja" : "Nein", race.startTime);
+    }
 
     // Finde das älteste unbeendete Rennen
     bool foundRace = false;
@@ -778,6 +802,16 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
 
             broadcastRaceUpdate();
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(race.duration) + "}");
+            
+            // Aktualisiere Laufzähler nach dem Beenden des Rennens
+            int runningRaces = 0;
+            for (const auto &raceEntry : raceQueue)
+            {
+                if (!raceEntry.isFinished)
+                    runningRaces++;
+            }
+            wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
+            
             break;
         }
     }
@@ -785,6 +819,14 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
     if (!foundRace)
     {
         Serial.printf("[MASTER_DEBUG] masterFinishRace: Kein offenes Rennen gefunden zum Beenden\n");
+        // Sende trotzdem Laufzähler-Update, falls alle Rennen beendet sind
+        int runningRaces = 0;
+        for (const auto &raceEntry : raceQueue)
+        {
+            if (!raceEntry.isFinished)
+                runningRaces++;
+        }
+        wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
     }
 }
 
@@ -793,16 +835,18 @@ void cleanupFinishedRaces()
     if (!isMaster())
         return;
 
-    // Entferne beendete Rennen, die älter als 30 Sekunden sind
+    // Entferne beendete Rennen, die älter als 15 Sekunden sind (reduziert von 30)
     // ABER: Behalte Rennen mit 0ms Dauer länger, da sie Probleme anzeigen können
     auto now = millis();
     auto it = raceQueue.begin();
+    bool removedAny = false;
+    
     while (it != raceQueue.end())
     {
-        if (it->isFinished && (now - it->finishTime > 30000)) // 30 Sekunden
+        if (it->isFinished && (now - it->finishTime > 15000)) // 15 Sekunden (reduziert)
         {
             // Spezialbehandlung für Rennen mit 0ms Dauer - behalte sie länger
-            if (it->duration == 0 && (now - it->finishTime < 60000)) // 60 Sekunden für 0ms-Rennen
+            if (it->duration == 0 && (now - it->finishTime < 30000)) // 30 Sekunden für 0ms-Rennen
             {
                 ++it;
                 continue;
@@ -813,6 +857,7 @@ void cleanupFinishedRaces()
                           macToString(it->finishDevice).c_str(),
                           it->duration);
             it = raceQueue.erase(it);
+            removedAny = true;
         }
         else
         {
@@ -820,8 +865,21 @@ void cleanupFinishedRaces()
         }
     }
 
-    // Sende Update wenn sich etwas geändert hat
-    broadcastRaceUpdate();
+    // Sende Update nur wenn sich etwas geändert hat
+    if (removedAny)
+    {
+        Serial.printf("[MASTER_DEBUG] Cleanup abgeschlossen. Neue Queue-Größe: %d\n", raceQueue.size());
+        broadcastRaceUpdate();
+        
+        // Aktualisiere WebSocket-Clients mit neuem Laufzähler
+        int runningRaces = 0;
+        for (const auto &race : raceQueue)
+        {
+            if (!race.isFinished)
+                runningRaces++;
+        }
+        wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
+    }
 }
 
 void broadcastRaceUpdate()

@@ -41,7 +41,7 @@ void masterTask(void *pvParameters)
         }
 
         // Race-Cleanup (Master) - entferne alte beendete Rennen
-        if (isMaster() && (now - lastRaceCleanup > 60000))
+        if (isMaster() && (now - lastRaceCleanup > 10000)) // Reduziert von 60000 auf 10000 (10 Sekunden)
         {
             cleanupFinishedRaces();
             lastRaceCleanup = now;
