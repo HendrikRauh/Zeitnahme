@@ -1,4 +1,5 @@
 #include <server.h>
+#include <data.h>
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -23,9 +24,23 @@ void broadcastDiscoveredDevices()
   wsBrodcastMessage("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
 }
 
+void broadcastMasterStatus()
+{
+  String json = "{\"type\":\"master_status\",\"status\":\"" + masterStatusToString(getMasterStatus()) + "\"";
+  if (isSlave())
+  {
+    json += ",\"masterMac\":\"" + macToShortString(getMasterMac()) + "\"";
+  }
+  json += "}";
+  wsBrodcastMessage(json);
+}
+
 void broadcastLichtschrankeStatus(LichtschrankeStatus status)
 {
-  wsBrodcastMessage("{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}");
+  // Immer senden - kein Caching für Status-Updates
+  String currentJson = "{\"type\":\"status\",\"status\":\"" + statusToString(status) + "\"}";
+  wsBrodcastMessage(currentJson);
+  Serial.printf("[WS_DEBUG] Status gesendet: %s\n", statusToString(status).c_str());
 }
 
 // Passe die WebSocket-Init an:
@@ -35,16 +50,26 @@ void initWebsocket()
              {
     if (type == WS_EVT_CONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u verbunden.\n", client->id());
-      // Status
-      client->text("{\"type\":\"status\",\"status\":\"" + statusToString(getStatus()) + "\"}");
-      // Letzte Zeit
-      client->text("{\"type\":\"lastTime\",\"value\":" + String(getLastTime()) + "}");
-      // Gespeicherte Geräte
-      client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
-      // Entdeckte Geräte (kann noch leer sein)
-      client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
-      // Starte Gerätesuche für diesen Client
-      searchForDevices(); // <-- NEU: Suche direkt beim Connect starten!
+      
+      // Batch alle Initial-Daten in einer Nachricht für bessere Performance
+      String initialData = "{\"type\":\"initial_state\",\"data\":{";
+      initialData += "\"status\":\"" + statusToString(getStatus()) + "\",";
+      initialData += "\"master_status\":\"" + masterStatusToString(getMasterStatus()) + "\",";
+      if (isSlave()) {
+        initialData += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
+      }
+      initialData += "\"lastTime\":" + String(getLastTime()) + ",";
+      initialData += "\"saved_devices\":" + getSavedDevicesJson() + ",";
+      initialData += "\"discovered_devices\":" + getDiscoveredDevicesJson();
+      initialData += "}}";
+      
+      client->text(initialData);
+      
+      // Sende ALLE aktuellen RAM-Daten an den neuen Client
+      updateWebSocketClients();
+      
+      // Starte Gerätesuche NUR bei Bedarf, nicht automatisch
+      // searchForDevices(); // Entfernt für bessere Performance
     } else if (type == WS_EVT_DISCONNECT) {
       Serial.printf("[WS_DEBUG] WebSocket Client #%u getrennt.\n", client->id());
     } });
@@ -69,6 +94,10 @@ void initWebpage()
     String json = "{";
     json += "\"selfMac\":\"" + macToShortString(getMacAddress()) + "\",";
     json += "\"selfRole\":\"" + roleToString(getOwnRole()) + "\",";
+    json += "\"masterStatus\":\"" + masterStatusToString(getMasterStatus()) + "\",";
+    if (isSlave()) {
+        json += "\"masterMac\":\"" + macToShortString(getMasterMac()) + "\",";
+    }
     json += "\"firmware_hash\":\"" + ESP.getSketchMD5() + "\"";
     
     // Filesystem-Hash aus .hash lesen
@@ -88,6 +117,11 @@ void initWebpage()
   server.on("/api/last_time", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     String json = "{\"lastTime\":" + String(getLastTime()) + "}";
+    request->send(200, "application/json", json); });
+
+  server.on("/api/lauf_count", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    String json = "{\"count\":" + String(getLaufCount()) + "}";
     request->send(200, "application/json", json); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -146,12 +180,14 @@ tellOtherDeviceToChangeHisRole(mac, ROLE_IGNORE);
 request->send(200, "text/plain", "Gerät entfernt");
 } else {
 Serial.printf("[WEB] Gerät %s soll auf Rolle %s gesetzt werden.\n", macToString(mac).c_str(), roleToString(role).c_str());
-if (changeOtherDevice(mac, role)) { // Sendet Nachricht an das Zielgerät und aktualisiert meine Liste
-  changeSavedDevice(mac, role); // Aktualisiert meine Liste
-request->send(200, "text/plain", "Saved");
+// Sende nur die Nachricht an das andere Gerät, aber ändere noch nicht unsere lokale Liste
+if (changeOtherDevice(mac, role)) { // Sendet nur Nachricht an das Zielgerät
+  // NICHT: changeSavedDevice(mac, role); // Warten auf Identity-Nachricht vom anderen Gerät
+  Serial.printf("[WEB] Anfrage an Gerät %s gesendet. Warte auf Bestätigung via Identity-Nachricht.\n", macToString(mac).c_str());
+  request->send(200, "text/plain", "Anfrage gesendet, warte auf Bestätigung");
 } else {
-Serial.println("[WEB] Fehler beim Speichern/Ändern des Geräts.");
-request->send(400, "text/plain", "Failed to save device");
+Serial.println("[WEB] Fehler beim Senden der Nachricht an das Gerät.");
+request->send(400, "text/plain", "Failed to send message to device");
 }
 }
 } else {
@@ -167,18 +203,18 @@ request->send(400, "text/plain", "Missing MAC or role");
   server.on("/get_distance_settings", HTTP_GET, [](AsyncWebServerRequest *request)
             {
 Serial.println("[WEB] GET /get_distance_settings aufgerufen.");
-float minDistance = getMinDistance();
-float maxDistance = getMaxDistance();
-String json = "{\"minDistance\":" + String(minDistance, 1) + ",\"maxDistance\":" + String(maxDistance, 1) + "}";
+int minDistance = getMinDistance();
+int maxDistance = getMaxDistance();
+String json = "{\"minDistance\":" + String(minDistance) + ",\"maxDistance\":" + String(maxDistance) + "}";
 request->send(200, "application/json", json); });
 
   server.on("/set_min_distance", HTTP_POST, [](AsyncWebServerRequest *request)
             {
 Serial.println("[WEB] POST /set_min_distance aufgerufen.");
 if (request->hasParam("minDistance", true)) {
-  float minDistance = request->getParam("minDistance", true)->value().toFloat();
+  int minDistance = request->getParam("minDistance", true)->value().toInt();
   setMinDistance(minDistance);
-  String msg = "Min-Distanz gesetzt auf " + String(minDistance, 1) + " cm";
+  String msg = "Min-Distanz gesetzt auf " + String(minDistance) + " cm";
   request->send(200, "text/plain", msg);
 } else {
   request->send(400, "text/plain", "Fehlender Min-Distanz-Parameter");
@@ -188,9 +224,9 @@ if (request->hasParam("minDistance", true)) {
             {
 Serial.println("[WEB] POST /set_max_distance aufgerufen.");
 if (request->hasParam("maxDistance", true)) {
-  float maxDistance = request->getParam("maxDistance", true)->value().toFloat();
+  int maxDistance = request->getParam("maxDistance", true)->value().toInt();
   setMaxDistance(maxDistance);
-  String msg = "Max-Distanz gesetzt auf " + String(maxDistance, 1) + " cm";
+  String msg = "Max-Distanz gesetzt auf " + String(maxDistance) + " cm";
   request->send(200, "text/plain", msg);
 } else {
   request->send(400, "text/plain", "Fehlender Max-Distanz-Parameter");

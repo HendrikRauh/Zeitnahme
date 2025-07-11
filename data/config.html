@@ -18,16 +18,19 @@
 
             <div class="sensor-grid">
                 <div class="sensor-item">
-                    <div class="sensor-label">Minimal-Distanz</div>
+                    <label class="sensor-label" for="minDistanceInput"
+                        >Minimal-Distanz</label
+                    >
                     <div class="sensor-input">
                         <input
                             type="number"
                             id="minDistanceInput"
                             min="2"
                             max="200"
-                            step="0.1"
-                            value="2.0"
-                            placeholder="2.0"
+                            step="1"
+                            value="2"
+                            placeholder="2"
+                            title="Minimal-Distanz in cm"
                         />
                         <span>cm</span>
                     </div>
@@ -44,9 +47,10 @@
                             id="maxDistanceInput"
                             min="2"
                             max="200"
-                            step="0.1"
-                            value="100.0"
-                            placeholder="100.0"
+                            step="1"
+                            value="100"
+                            placeholder="100"
+                            title="Maximal-Distanz in cm"
                         />
                         <span>cm</span>
                     </div>

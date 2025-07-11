@@ -1,4 +1,5 @@
 #include <Utility.h>
+#include <server.h>
 
 String roleToString(Role role)
 {
@@ -10,6 +11,21 @@ String roleToString(Role role)
         return "Ziel";
     case ROLE_IGNORE:
         return "Ignorieren";
+    default:
+        return "unknown";
+    }
+}
+
+String masterStatusToString(MasterStatus status)
+{
+    switch (status)
+    {
+    case MASTER_UNKNOWN:
+        return "Unknown";
+    case MASTER_SLAVE:
+        return "Slave";
+    case MASTER_MASTER:
+        return "Master";
     default:
         return "unknown";
     }
@@ -91,9 +107,8 @@ String statusToString(LichtschrankeStatus status)
 
 void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
 {
-    Serial.printf("[ROLE_DEBUG] Identity empfangen von MAC %s, Rolle %s\n", macToString(senderMac).c_str(), roleToString(senderRole));
-
     bool hasChanges = false;
+    bool roleChanged = false;
 
     if (checkIfDeviceIsSaved(senderMac))
     {
@@ -104,33 +119,75 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
             {
                 if (dev.role != senderRole)
                 {
-                    Serial.printf("[ROLE_DEBUG] Rolle von Gerät %s hat sich geändert: %s -> %s\n",
-                                  macToString(senderMac).c_str(), roleToString(dev.role).c_str(), roleToString(senderRole));
                     changeSavedDevice(senderMac, senderRole);
                     hasChanges = true;
+                    roleChanged = true;
+                    
+                    // WebSocket-Update für Rollenbestätigung senden
+                    String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
+                    wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
                 }
                 else
                 {
-                    Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt mit korrekter Rolle %s\n",
-                                  macToString(senderMac).c_str(), roleToString(senderRole));
+                    // Markiere Gerät als online in savedDevices
+                    for (auto &device : savedDevices)
+                    {
+                        if (memcmp(device.mac, senderMac, 6) == 0)
+                        {
+                            device.isOnline = true;
+                            device.lastSeen = millis();
+                            break;
+                        }
+                    }
+                    hasChanges = true; // Trigger Master-Neubestimmung
                 }
                 break;
             }
         }
     }
 
+    // Aktualisiere entdeckte Geräte Liste
     if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
-        Serial.printf("[ROLE_DEBUG] Gerät %s wird zu gefunden Geräten hinzugefügt\n", macToString(senderMac).c_str());
         addDiscoveredDevice(senderMac, senderRole);
         hasChanges = true;
+    }
+    else
+    {
+        // Prüfe, ob sich die Rolle in den entdeckten Geräten geändert hat
+        bool discoveredRoleChanged = false;
+        for (const auto &dev : getDiscoveredDevices())
+        {
+            if (memcmp(dev.mac, senderMac, 6) == 0)
+            {
+                if (dev.role != senderRole)
+                {
+                    updateDiscoveredDeviceRole(senderMac, senderRole);
+                    hasChanges = true;
+                    if (!roleChanged) // Nur senden wenn nicht bereits von savedDevices gesendet
+                    {
+                        // WebSocket-Update für Rollenbestätigung senden
+                        String json = "{\"mac\":\"" + macToShortString(senderMac) + "\",\"role\":\"" + roleToString(senderRole) + "\"}";
+                        wsBrodcastMessage("{\"type\":\"device_role_changed\",\"data\":" + json + "}");
+                    }
+                }
+                discoveredRoleChanged = true;
+                break;
+            }
+        }
+        if (!discoveredRoleChanged)
+        {
+            addDiscoveredDevice(senderMac, senderRole);
+            hasChanges = true;
+        }
     }
 
     // Nur broadcasten wenn es tatsächlich Änderungen gab
     if (hasChanges)
     {
-        broadcastDiscoveredDevices();
         printDeviceLists();
+        // Master-Status neu bestimmen wenn sich etwas geändert hat
+        determineMaster();
     }
 }
 
@@ -138,33 +195,42 @@ void printDeviceLists()
 {
     Serial.println("\n=== Geräteübersicht ===");
     Serial.printf("Eigene MAC: %s\n", macToString(getMacAddress()).c_str());
+    Serial.printf("Master-Status: %s\n", masterStatusToString(getMasterStatus()).c_str());
+    if (isSlave())
+    {
+        Serial.printf("Master-MAC: %s\n", macToString(getMasterMac()).c_str());
+    }
 
     Serial.println("\nEntdeckte Geräte:");
     for (const auto &dev : getDiscoveredDevices())
     {
-        Serial.printf("%s - Rolle: %s\n",
+        Serial.printf("%s - Rolle: %s, Online: %s, Offset: %ld ms\n",
                       macToString(dev.mac).c_str(),
-                      roleToString(dev.role));
+                      roleToString(dev.role).c_str(),
+                      dev.isOnline ? "Ja" : "Nein",
+                      dev.timeOffset);
     }
 
     Serial.println("\nGespeicherte Geräte:");
     for (const auto &dev : getSavedDevices())
     {
-        Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X - Rolle: %s\n",
+        Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X - Rolle: %s, Online: %s, Offset: %ld ms\n",
                       dev.mac[0], dev.mac[1], dev.mac[2], dev.mac[3], dev.mac[4], dev.mac[5],
-                      roleToString(dev.role).c_str());
+                      roleToString(dev.role).c_str(),
+                      dev.isOnline ? "Ja" : "Nein",
+                      dev.timeOffset);
     }
     Serial.println("=====================\n");
 }
 
 String getSavedDevicesJson()
 {
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
 
     for (const auto &dev : getSavedDevices())
     {
-        JsonObject obj = arr.createNestedObject();
+        JsonObject obj = arr.add<JsonObject>();
 
         obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);
@@ -179,12 +245,12 @@ String getDiscoveredDevicesJson()
 {
     sendDiscoveryMessage();
 
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
 
     for (const auto &dev : getDiscoveredDevices())
     {
-        JsonObject obj = arr.createNestedObject();
+        JsonObject obj = arr.add<JsonObject>();
 
         obj["mac"] = macToShortString(dev.mac);
         obj["role"] = roleToString(dev.role);

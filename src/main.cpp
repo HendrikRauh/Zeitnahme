@@ -4,6 +4,7 @@
 #include <espnow.h>
 #include <data.h>
 #include <task.h>
+#include <masterTask.h>
 #include <Sensor.h>
 #include <server.h>
 
@@ -11,7 +12,7 @@ char macStr[18] = {0};
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   initDeviceInfo();
   initWebpage();
   initEspNow();
@@ -19,9 +20,37 @@ void setup()
   loadDeviceListFromPreferences();
   initWebsocket();
   initLichtschrankeTask();
+
+  // Gestaffelte Initialisierung basierend auf MAC-Adresse (reduziert für bessere Performance)
+  // Geräte mit niedrigerer MAC warten weniger
+  const uint8_t *myMac = getMacAddress();
+  uint32_t macSum = myMac[2] + myMac[3] + myMac[4] + myMac[5];
+  uint32_t delayMs = (macSum % 3) * 500; // 0-1 Sekunden Verzögerung (reduziert)
+
+  Serial.printf("[MASTER_DEBUG] Warte %lu ms vor Master-Bestimmung (MAC-basiert)\n", delayMs);
+  delay(delayMs);
+
+  // Master-System initialisieren
+  determineMaster();
+
+  // Master-Task starten
+  initMasterTask();
+
+  // Reduzierte Verzögerung für Netzwerk-Stabilisierung
+  delay(1000); // Reduziert von 3000ms auf 1000ms
+
+  // Zeit-Synchronisation starten (falls Slave)
+  if (isSlave())
+  {
+    syncTimeWithMaster();
+  }
+
+  Serial.printf("[MASTER_DEBUG] Setup abgeschlossen - Status: %s\n", masterStatusToString(getMasterStatus()).c_str());
 }
 
 void loop()
 {
-  // leer lassen! Die Hauptlogik läuft in lichtschrankeTask
+  // Die Hauptlogik läuft jetzt in separaten Tasks
+  // Minimale Verzögerung für bessere Performance
+  delay(100);
 }

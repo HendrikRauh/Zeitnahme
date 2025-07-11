@@ -49,6 +49,33 @@ body {
     background: #eee;
 }
 
+#laufstatus-top,
+#laufstatus-bottom {
+    width: 100vw;
+    text-align: center;
+    font-size: 8vw;
+    margin: 0;
+    line-height: 1.1;
+    min-height: 1.2em;
+    user-select: none;
+    pointer-events: none;
+}
+
+#laufstatus-top {
+    margin-top: 2vh;
+    margin-bottom: 1vh;
+}
+
+#laufstatus-bottom {
+    margin-top: 1vh;
+    margin-bottom: 2vh;
+}
+
+#zeit {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 @media (max-width: 600px) {
     #zeit {
         font-size: 14vw;
@@ -59,5 +86,9 @@ body {
         font-size: 2em;
         right: 4vw;
         bottom: 4vw;
+    }
+    #laufstatus-top,
+    #laufstatus-bottom {
+        font-size: 12vw;
     }
 }

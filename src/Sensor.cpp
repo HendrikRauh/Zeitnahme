@@ -5,10 +5,10 @@
 constexpr uint8_t TRIG_PIN = 12;
 constexpr uint8_t ECHO_PIN = 13;
 
-float cachedMinDistance = 2.0f;   // Cache für bessere Performance
-float cachedMaxDistance = 100.0f; // Cache für bessere Performance
+int cachedMinDistance = 2;   // Cache für bessere Performance
+int cachedMaxDistance = 100; // Cache für bessere Performance
 
-// Einfache Ultraschall-Messung ohne externe Bibliothek
+// Einfache Ultraschall-Messung ohne externe Bibliothek - optimiert für Geschwindigkeit
 float getDistanceCM()
 {
     digitalWrite(TRIG_PIN, LOW);
@@ -17,10 +17,13 @@ float getDistanceCM()
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
 
-    long duration = pulseIn(ECHO_PIN, HIGH);
-    float distance = (duration * 0.034) / 2; // Schallgeschwindigkeit: 340 m/s
+    // Noch kürzerer Timeout für maximale Reaktionszeit
+    long duration = pulseIn(ECHO_PIN, HIGH, 20000); // 20ms Timeout
+    if (duration == 0)
+        return MAX_DISTANCE_CM;
 
-    return distance > 0 ? distance : MAX_DISTANCE_CM;
+    // Optimierte Berechnung
+    return (duration * 0.017); // Direkte Berechnung: duration * 0.034 / 2
 }
 
 void initSensor()
@@ -35,32 +38,42 @@ void initSensor()
 MeasureResult measure()
 {
     MeasureResult res;
-    res.time = millis();
+    // Mikrosekunden-Genauigkeit für höchste Zeitpräzision
+    unsigned long startMicros = micros();
     float dist = getDistanceCM();
+    res.time = startMicros / 1000; // Konvertierung zu Millisekunden
+
     if (dist == 0)
     {
         dist = MAX_DISTANCE_CM;
     }
 
-    // Auslösung wenn Distanz zwischen Min und Max liegt
+    // Optimierte Trigger-Erkennung
     res.triggered = (dist >= cachedMinDistance && dist <= cachedMaxDistance);
-    // Serial.printf("%s | Dist: %.0f (Min: %.0f, Max: %.0f)\n", res.triggered ? "🔴" : "🟢", dist, cachedMinDistance, cachedMaxDistance);
+
+    // Debug nur bei Trigger-Ereignissen
+    if (res.triggered)
+    {
+        Serial.printf("Sensor TRIGGER: %.1fcm (Min:%d Max:%d)\n", dist, cachedMinDistance, cachedMaxDistance);
+    }
+
     return res;
 }
 
 void updateDistanceCache()
 {
+    // Verwende die Funktionen aus data.h für bessere Cache-Synchronisation
     cachedMinDistance = getMinDistance();
     cachedMaxDistance = getMaxDistance();
-    Serial.printf("[SENSOR_DEBUG] Distanz-Cache aktualisiert - Min: %.2f cm, Max: %.2f cm\n", cachedMinDistance, cachedMaxDistance);
+    Serial.printf("[SENSOR_CACHE] Cache aktualisiert: Min:%d Max:%d\n", cachedMinDistance, cachedMaxDistance);
 }
 
-float getCurrentMinDistance()
+int getCurrentMinDistance()
 {
     return cachedMinDistance;
 }
 
-float getCurrentMaxDistance()
+int getCurrentMaxDistance()
 {
     return cachedMaxDistance;
 }

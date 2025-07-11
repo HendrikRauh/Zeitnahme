@@ -6,4 +6,12 @@ enum Role
     ROLE_START,
     ROLE_ZIEL
 };
+
+enum MasterStatus
+{
+    MASTER_UNKNOWN,
+    MASTER_SLAVE,
+    MASTER_MASTER
+};
+
 #endif
