@@ -1,4 +1,5 @@
 #include <server.h>
+#include <data.h>
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -61,6 +62,10 @@ void initWebsocket()
       client->text("{\"type\":\"saved_devices\",\"data\":" + getSavedDevicesJson() + "}");
       // Entdeckte Geräte (kann noch leer sein)
       client->text("{\"type\":\"discovered_devices\",\"data\":" + getDiscoveredDevicesJson() + "}");
+      
+      // Sende ALLE aktuellen RAM-Daten an den neuen Client
+      updateWebSocketClients();
+      
       // Starte Gerätesuche für diesen Client
       searchForDevices(); // <-- NEU: Suche direkt beim Connect starten!
     } else if (type == WS_EVT_DISCONNECT) {

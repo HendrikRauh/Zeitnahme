@@ -6,6 +6,7 @@ void masterTask(void *pvParameters)
     unsigned long lastMasterCheck = 0;
     unsigned long lastTimeSync = 0;
     unsigned long lastRaceCleanup = 0;
+    unsigned long lastFullSync = 0;
 
     for (;;)
     {
@@ -16,6 +17,13 @@ void masterTask(void *pvParameters)
         {
             sendHeartbeat();
             lastHeartbeat = now;
+        }
+
+        // Full-Sync senden (Master) - alle 10 Sekunden
+        if (isMaster() && (now - lastFullSync > 10000))
+        {
+            sendFullSync();
+            lastFullSync = now;
         }
 
         // Master-Online-Check (Slave)
@@ -53,29 +61,4 @@ void initMasterTask()
         1,
         NULL,
         0); // Auf Core 0 laufen lassen
-}
-
-void cleanupFinishedRaces()
-{
-    if (!isMaster())
-        return;
-
-    // Entferne beendete Rennen, die älter als 2 Minuten sind
-    unsigned long cutoffTime = millis() - 120000; // 2 Minuten
-    auto it = raceQueue.begin();
-    while (it != raceQueue.end())
-    {
-        if (it->isFinished && it->finishTime < cutoffTime)
-        {
-            Serial.printf("[MASTER_DEBUG] Entferne altes beendetes Rennen: Start %s, Ziel %s, Dauer %lu ms\n",
-                          macToString(it->startDevice).c_str(),
-                          macToString(it->finishDevice).c_str(),
-                          it->duration);
-            it = raceQueue.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
 }

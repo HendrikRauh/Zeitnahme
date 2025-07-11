@@ -416,38 +416,62 @@ void determineMaster()
 {
     Serial.println("[MASTER_DEBUG] Bestimme Master-Gerät...");
 
+    // Debug: Aktuelle MAC-Adresse ausgeben
+    Serial.printf("[MASTER_DEBUG] Eigene MAC-Adresse: %s\n", macToString(getMacAddress()).c_str());
+
     uint8_t lowestMac[6];
     memcpy(lowestMac, getMacAddress(), 6);
     bool foundLower = false;
 
+    Serial.printf("[MASTER_DEBUG] Starte mit eigener MAC als niedrigste: %s\n", macToString(lowestMac).c_str());
+
     // Prüfe alle gespeicherten Geräte die online sind
+    Serial.printf("[MASTER_DEBUG] Prüfe %d gespeicherte Geräte...\n", savedDevices.size());
     for (const auto &dev : savedDevices)
     {
+        Serial.printf("[MASTER_DEBUG] Gerät %s: Online=%d, Vergleich mit aktuell niedrigster MAC\n",
+                      macToString(dev.mac).c_str(), dev.isOnline);
+
         if (dev.isOnline && memcmp(dev.mac, lowestMac, 6) < 0)
         {
+            Serial.printf("[MASTER_DEBUG] Gefunden niedrigere MAC: %s < %s\n",
+                          macToString(dev.mac).c_str(), macToString(lowestMac).c_str());
             memcpy(lowestMac, dev.mac, 6);
             foundLower = true;
         }
     }
 
     // Prüfe auch alle entdeckten Geräte
+    Serial.printf("[MASTER_DEBUG] Prüfe %d entdeckte Geräte...\n", discoveredDevices.size());
     for (const auto &dev : discoveredDevices)
     {
+        Serial.printf("[MASTER_DEBUG] Entdecktes Gerät %s: Online=%d, Vergleich mit aktuell niedrigster MAC\n",
+                      macToString(dev.mac).c_str(), dev.isOnline);
+
         if (dev.isOnline && memcmp(dev.mac, lowestMac, 6) < 0)
         {
+            Serial.printf("[MASTER_DEBUG] Gefunden niedrigere MAC: %s < %s\n",
+                          macToString(dev.mac).c_str(), macToString(lowestMac).c_str());
             memcpy(lowestMac, dev.mac, 6);
             foundLower = true;
         }
     }
+
+    Serial.printf("[MASTER_DEBUG] Endgültige niedrigste MAC: %s (foundLower=%d)\n",
+                  macToString(lowestMac).c_str(), foundLower);
 
     if (!foundLower)
     {
         // Dieses Gerät hat die niedrigste MAC
         if (!isMaster())
         {
+            Serial.printf("[MASTER_DEBUG] Dieses Gerät wird Master (niedrigste MAC): %s\n", macToString(getMacAddress()).c_str());
             setMasterStatus(MASTER_MASTER);
             memcpy(masterMac, getMacAddress(), 6);
-            Serial.printf("[MASTER_DEBUG] Dieses Gerät wird Master: %s\n", macToString(masterMac).c_str());
+        }
+        else
+        {
+            Serial.printf("[MASTER_DEBUG] Dieses Gerät bleibt Master: %s\n", macToString(getMacAddress()).c_str());
         }
     }
     else
@@ -455,13 +479,20 @@ void determineMaster()
         // Ein anderes Gerät ist Master
         if (!isSlave() || memcmp(masterMac, lowestMac, 6) != 0)
         {
+            Serial.printf("[MASTER_DEBUG] Anderes Gerät wird Master: %s (aktueller Status: %s)\n",
+                          macToString(lowestMac).c_str(), isMaster() ? "Master" : (isSlave() ? "Slave" : "Unknown"));
             setMasterStatus(MASTER_SLAVE);
             memcpy(masterMac, lowestMac, 6);
-            Serial.printf("[MASTER_DEBUG] Anderes Gerät ist Master: %s\n", macToString(masterMac).c_str());
+        }
+        else
+        {
+            Serial.printf("[MASTER_DEBUG] Anderes Gerät bleibt Master: %s\n", macToString(lowestMac).c_str());
         }
     }
 
     lastMasterSeen = millis();
+    Serial.printf("[MASTER_DEBUG] Master-Bestimmung abgeschlossen. Master: %s, Eigener Status: %s\n",
+                  macToString(masterMac).c_str(), isMaster() ? "Master" : (isSlave() ? "Slave" : "Unknown"));
 }
 
 void syncTimeWithMaster()
@@ -474,6 +505,9 @@ void syncTimeWithMaster()
 
 void handleMasterHeartbeat(const uint8_t *incomingMasterMac, unsigned long masterTime)
 {
+    Serial.printf("[MASTER_DEBUG] Heartbeat empfangen von: %s (aktueller Master: %s)\n",
+                  macToString(incomingMasterMac).c_str(), macToString(masterMac).c_str());
+
     if (memcmp(masterMac, incomingMasterMac, 6) == 0)
     {
         lastMasterSeen = millis();
@@ -481,6 +515,10 @@ void handleMasterHeartbeat(const uint8_t *incomingMasterMac, unsigned long maste
     }
     else
     {
+        Serial.printf("[MASTER_DEBUG] Heartbeat von anderem Master. Vergleiche MACs:\n");
+        Serial.printf("[MASTER_DEBUG] Incoming Master: %s\n", macToString(incomingMasterMac).c_str());
+        Serial.printf("[MASTER_DEBUG] Eigene MAC: %s\n", macToString(getMacAddress()).c_str());
+
         // Prüfe, ob der sendende Master eine niedrigere MAC-Adresse hat
         if (memcmp(incomingMasterMac, getMacAddress(), 6) < 0)
         {
@@ -496,7 +534,12 @@ void handleMasterHeartbeat(const uint8_t *incomingMasterMac, unsigned long maste
             Serial.printf("[MASTER_DEBUG] Heartbeat von unberechtigtem Master empfangen: %s (höhere MAC)\n", macToString(incomingMasterMac).c_str());
             if (!isMaster())
             {
+                Serial.printf("[MASTER_DEBUG] Führe Master-Bestimmung durch, da wir nicht Master sind\n");
                 determineMaster();
+            }
+            else
+            {
+                Serial.printf("[MASTER_DEBUG] Ignoriere Heartbeat, da wir bereits Master sind\n");
             }
         }
     }
@@ -558,27 +601,69 @@ void handleTimeSyncResponse(const uint8_t *incomingMasterMac, unsigned long mast
 
 long getTimeOffset(const uint8_t *deviceMac)
 {
+    // Prüfe erst die gespeicherten Geräte
     for (const auto &dev : savedDevices)
     {
         if (memcmp(dev.mac, deviceMac, 6) == 0)
         {
+            Serial.printf("[SYNC_DEBUG] Zeit-Offset für %s aus savedDevices: %ld ms\n",
+                          macToString(deviceMac).c_str(), dev.timeOffset);
             return dev.timeOffset;
         }
     }
+
+    // Prüfe auch die entdeckten Geräte
+    for (const auto &dev : discoveredDevices)
+    {
+        if (memcmp(dev.mac, deviceMac, 6) == 0)
+        {
+            Serial.printf("[SYNC_DEBUG] Zeit-Offset für %s aus discoveredDevices: %ld ms\n",
+                          macToString(deviceMac).c_str(), dev.timeOffset);
+            return dev.timeOffset;
+        }
+    }
+
+    Serial.printf("[SYNC_DEBUG] Kein Zeit-Offset für %s gefunden, verwende 0\n",
+                  macToString(deviceMac).c_str());
     return 0;
 }
 
 void updateTimeOffset(const uint8_t *deviceMac, long offset)
 {
+    bool updated = false;
+
+    // Aktualisiere in savedDevices
     for (auto &dev : savedDevices)
     {
         if (memcmp(dev.mac, deviceMac, 6) == 0)
         {
             dev.timeOffset = offset;
             dev.lastSeen = millis();
-            Serial.printf("[SYNC_DEBUG] Zeit-Offset für %s aktualisiert: %ld ms\n", macToString(deviceMac).c_str(), offset);
-            return;
+            updated = true;
+            Serial.printf("[SYNC_DEBUG] Zeit-Offset für %s in savedDevices aktualisiert: %ld ms\n",
+                          macToString(deviceMac).c_str(), offset);
+            break;
         }
+    }
+
+    // Aktualisiere auch in discoveredDevices
+    for (auto &dev : discoveredDevices)
+    {
+        if (memcmp(dev.mac, deviceMac, 6) == 0)
+        {
+            dev.timeOffset = offset;
+            dev.lastSeen = millis();
+            updated = true;
+            Serial.printf("[SYNC_DEBUG] Zeit-Offset für %s in discoveredDevices aktualisiert: %ld ms\n",
+                          macToString(deviceMac).c_str(), offset);
+            break;
+        }
+    }
+
+    if (!updated)
+    {
+        Serial.printf("[SYNC_DEBUG] Gerät %s nicht gefunden für Zeit-Offset-Update\n",
+                      macToString(deviceMac).c_str());
     }
 }
 
@@ -586,7 +671,22 @@ void updateTimeOffset(const uint8_t *deviceMac, long offset)
 void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, unsigned long localTime)
 {
     if (!isMaster())
+    {
+        Serial.printf("[MASTER_DEBUG] masterAddRaceStart aufgerufen, aber dieses Gerät ist nicht Master (Status: %s)\n",
+                      isMaster() ? "Master" : (isSlave() ? "Slave" : "Unknown"));
         return;
+    }
+
+    // Berechne Zeit-Offset zwischen Master und Start-Gerät
+    if (memcmp(startDevice, getMacAddress(), 6) != 0)
+    {
+        // Zeit-Offset: (unsere Zeit) - (lokale Zeit des anderen Geräts)
+        // Dieser Offset wird später zu der anderen Zeit addiert, um sie zu korrigieren
+        long estimatedOffset = (long)millis() - (long)startTime;
+        updateTimeOffset(startDevice, estimatedOffset);
+        Serial.printf("[MASTER_DEBUG] Zeit-Offset für Start-Gerät %s geschätzt: %ld ms\n",
+                      macToString(startDevice).c_str(), estimatedOffset);
+    }
 
     RaceEntry entry;
     entry.startTime = startTime;
@@ -600,7 +700,8 @@ void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, uns
 
     raceQueue.push_back(entry);
 
-    Serial.printf("[MASTER_DEBUG] Rennen gestartet von %s, Zeit: %lu\n", macToString(startDevice).c_str(), startTime);
+    Serial.printf("[MASTER_DEBUG] Rennen gestartet von %s, Zeit: %lu (Queue-Größe: %d)\n",
+                  macToString(startDevice).c_str(), startTime, raceQueue.size());
 
     broadcastRaceUpdate();
     wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(raceQueue.size()) + "}");
@@ -608,14 +709,40 @@ void masterAddRaceStart(unsigned long startTime, const uint8_t *startDevice, uns
 
 void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, unsigned long localTime)
 {
-    if (!isMaster() || raceQueue.empty())
+    if (!isMaster())
+    {
+        Serial.printf("[MASTER_DEBUG] masterFinishRace aufgerufen, aber dieses Gerät ist nicht Master (Status: %s)\n",
+                      isMaster() ? "Master" : (isSlave() ? "Slave" : "Unknown"));
         return;
+    }
+
+    if (raceQueue.empty())
+    {
+        Serial.printf("[MASTER_DEBUG] masterFinishRace: Keine offenen Rennen in der Queue\n");
+        return;
+    }
+
+    // Berechne Zeit-Offset zwischen Master und Ziel-Gerät
+    if (memcmp(finishDevice, getMacAddress(), 6) != 0)
+    {
+        // Zeit-Offset: (unsere Zeit) - (lokale Zeit des anderen Geräts)
+        // Dieser Offset wird später zu der anderen Zeit addiert, um sie zu korrigieren
+        long estimatedOffset = (long)millis() - (long)finishTime;
+        updateTimeOffset(finishDevice, estimatedOffset);
+        Serial.printf("[MASTER_DEBUG] Zeit-Offset für Ziel-Gerät %s geschätzt: %ld ms\n",
+                      macToString(finishDevice).c_str(), estimatedOffset);
+    }
+
+    Serial.printf("[MASTER_DEBUG] masterFinishRace von %s, Zeit: %lu, Queue-Größe: %d\n",
+                  macToString(finishDevice).c_str(), finishTime, raceQueue.size());
 
     // Finde das älteste unbeendete Rennen
+    bool foundRace = false;
     for (auto &race : raceQueue)
     {
         if (!race.isFinished)
         {
+            foundRace = true;
             race.isFinished = true;
             race.finishTime = finishTime;
             race.finishTimeLocal = localTime;
@@ -625,31 +752,83 @@ void masterFinishRace(unsigned long finishTime, const uint8_t *finishDevice, uns
             long startOffset = getTimeOffset(race.startDevice);
             long finishOffset = getTimeOffset(finishDevice);
 
-            unsigned long correctedStartTime = race.startTime + startOffset;
-            unsigned long correctedFinishTime = finishTime + finishOffset;
+            Serial.printf("[MASTER_DEBUG] Rohe Zeiten: Start=%lu, Ziel=%lu\n", race.startTime, finishTime);
+            Serial.printf("[MASTER_DEBUG] Zeit-Offsets: Start=%ld ms, Ziel=%ld ms\n", startOffset, finishOffset);
 
-            race.duration = correctedFinishTime - correctedStartTime;
+            // Korrigiere die Zeiten mit den Offsets
+            long correctedStartTime = (long)race.startTime + startOffset;
+            long correctedFinishTime = (long)finishTime + finishOffset;
 
-            Serial.printf("[MASTER_DEBUG] Rennen beendet: Start %s (%lu), Ziel %s (%lu), Dauer: %lu ms\n",
+            Serial.printf("[MASTER_DEBUG] Korrigierte Zeiten: Start=%ld, Ziel=%ld\n", correctedStartTime, correctedFinishTime);
+
+            // Berechne Dauer und verhindere negative Werte
+            long duration = correctedFinishTime - correctedStartTime;
+            if (duration < 0)
+            {
+                Serial.printf("[MASTER_DEBUG] WARNUNG: Negative Dauer erkannt! Start: %ld, Ziel: %ld, Dauer: %ld\n",
+                              correctedStartTime, correctedFinishTime, duration);
+                duration = 0; // Setze auf 0 wenn negativ
+            }
+            race.duration = (unsigned long)duration;
+
+            Serial.printf("[MASTER_DEBUG] Rennen beendet: Start %s (%ld), Ziel %s (%ld), Dauer: %lu ms\n",
                           macToString(race.startDevice).c_str(), correctedStartTime,
                           macToString(finishDevice).c_str(), correctedFinishTime,
                           race.duration);
 
             broadcastRaceUpdate();
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(race.duration) + "}");
-
-            // Entferne beendete Rennen nach kurzer Zeit
-            // (wird in einem separaten Cleanup-Prozess gemacht)
             break;
         }
     }
+
+    if (!foundRace)
+    {
+        Serial.printf("[MASTER_DEBUG] masterFinishRace: Kein offenes Rennen gefunden zum Beenden\n");
+    }
+}
+
+void cleanupFinishedRaces()
+{
+    if (!isMaster())
+        return;
+
+    // Entferne beendete Rennen, die älter als 30 Sekunden sind
+    // ABER: Behalte Rennen mit 0ms Dauer länger, da sie Probleme anzeigen können
+    auto now = millis();
+    auto it = raceQueue.begin();
+    while (it != raceQueue.end())
+    {
+        if (it->isFinished && (now - it->finishTime > 30000)) // 30 Sekunden
+        {
+            // Spezialbehandlung für Rennen mit 0ms Dauer - behalte sie länger
+            if (it->duration == 0 && (now - it->finishTime < 60000)) // 60 Sekunden für 0ms-Rennen
+            {
+                ++it;
+                continue;
+            }
+
+            Serial.printf("[MASTER_DEBUG] Entferne altes Rennen: Start %s, Ziel %s, Dauer: %lu ms\n",
+                          macToString(it->startDevice).c_str(),
+                          macToString(it->finishDevice).c_str(),
+                          it->duration);
+            it = raceQueue.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    // Sende Update wenn sich etwas geändert hat
+    broadcastRaceUpdate();
 }
 
 void broadcastRaceUpdate()
 {
     if (isMaster())
     {
-        sendRaceUpdate();
+        sendFullSync(); // Verwende Full-Sync statt nur Race-Update
     }
 }
 
@@ -657,21 +836,33 @@ void handleRaceUpdate(const uint8_t *data, int len)
 {
     if (isSlave())
     {
-        // Für jetzt implementieren wir eine einfache Lösung
-        // In einer vollständigen Implementierung würden wir ein serialisiertes Format verwenden
         Serial.printf("[SLAVE_DEBUG] Race-Update vom Master empfangen (Länge: %d)\n", len);
 
-        // Für die einfache Implementierung nehmen wir an, dass die Daten
-        // direkt die Anzahl der laufenden Rennen enthalten
         if (len >= sizeof(RaceUpdateMessage))
         {
             RaceUpdateMessage msg;
             memcpy(&msg, data, sizeof(msg));
 
-            // Synchronisiere die Anzahl der laufenden Rennen
-            // (Eine vollständige Implementierung würde hier die tatsächlichen Race-Daten übertragen)
-            Serial.printf("[SLAVE_DEBUG] Master hat %d laufende Rennen\n", msg.raceCount);
-            wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(msg.raceCount) + "}");
+            // Prüfe, ob die Nachricht vom bekannten Master kommt
+            if (memcmp(msg.masterMac, getMasterMac(), 6) == 0)
+            {
+                // Synchronisiere die Race-Queue komplett mit den Master-Daten
+                raceQueue.clear();
+
+                for (int i = 0; i < msg.raceCount; i++)
+                {
+                    raceQueue.push_back(msg.races[i]);
+                }
+
+                Serial.printf("[SLAVE_DEBUG] Race-Queue synchronisiert: %d Rennen vom Master\n", msg.raceCount);
+
+                // Aktualisiere WebSocket-Clients mit aktuellen Daten
+                updateWebSocketClients();
+            }
+            else
+            {
+                Serial.printf("[SLAVE_DEBUG] Race-Update von unbekanntem Master ignoriert: %s\n", macToString(msg.masterMac).c_str());
+            }
         }
     }
 }
@@ -692,5 +883,110 @@ void slaveHandleRaceFinish(unsigned long finishTime, const uint8_t *finishDevice
     {
         // Sende Event an Master
         broadcastRaceEvent(ROLE_ZIEL, finishTime);
+    }
+}
+
+void updateWebSocketClients()
+{
+    // Sende Master-Status
+    String masterStatus = isMaster() ? "Master" : "Slave";
+    wsBrodcastMessage("{\"type\":\"masterStatus\",\"value\":\"" + masterStatus + "\"}");
+
+    // Sende Master-MAC
+    wsBrodcastMessage("{\"type\":\"masterMac\",\"value\":\"" + macToString(getMasterMac()) + "\"}");
+
+    // Sende Zeit-Offset (nur bei Slaves)
+    if (isSlave())
+    {
+        long offset = getTimeOffset(getMasterMac());
+        wsBrodcastMessage("{\"type\":\"timeOffset\",\"value\":" + String(offset) + "}");
+    }
+
+    // Sende Laufzähler (nur laufende Rennen)
+    int runningRaces = 0;
+    for (const auto &race : raceQueue)
+    {
+        if (!race.isFinished)
+            runningRaces++;
+    }
+    wsBrodcastMessage("{\"type\":\"laufCount\",\"value\":" + String(runningRaces) + "}");
+
+    // Sende letzte Zeit (letztes beendetes Rennen)
+    for (auto it = raceQueue.rbegin(); it != raceQueue.rend(); ++it)
+    {
+        if (it->isFinished)
+        {
+            wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(it->duration) + "}");
+            break;
+        }
+    }
+
+    // Sende vollständige Race-Liste als JSON
+    JsonDocument doc;
+    JsonArray races = doc.to<JsonArray>();
+
+    for (const auto &race : raceQueue)
+    {
+        JsonObject raceObj = races.add<JsonObject>();
+        raceObj["startTime"] = race.startTime;
+        raceObj["startDevice"] = macToString(race.startDevice);
+        raceObj["isFinished"] = race.isFinished;
+
+        if (race.isFinished)
+        {
+            raceObj["finishTime"] = race.finishTime;
+            raceObj["finishDevice"] = macToString(race.finishDevice);
+            raceObj["duration"] = race.duration;
+        }
+    }
+
+    String raceListJson;
+    serializeJson(doc, raceListJson);
+    wsBrodcastMessage("{\"type\":\"raceList\",\"data\":" + raceListJson + "}");
+}
+
+void handleFullSync(const uint8_t *data, int len)
+{
+    if (isSlave())
+    {
+        Serial.printf("[SLAVE_DEBUG] Full-Sync vom Master empfangen (Länge: %d)\n", len);
+
+        if (len >= sizeof(FullSyncMessage))
+        {
+            FullSyncMessage msg;
+            memcpy(&msg, data, sizeof(msg));
+
+            // Prüfe, ob die Nachricht vom bekannten Master kommt
+            if (memcmp(msg.masterMac, getMasterMac(), 6) == 0)
+            {
+                // Synchronisiere die Race-Queue komplett mit den Master-Daten
+                raceQueue.clear();
+
+                for (int i = 0; i < msg.raceCount; i++)
+                {
+                    raceQueue.push_back(msg.races[i]);
+                }
+
+                // Berechne Zeit-Offset zum Master
+                long timeOffset = msg.masterTime - millis();
+                updateTimeOffset(msg.masterMac, timeOffset);
+
+                Serial.printf("[SLAVE_DEBUG] Full-Sync verarbeitet: %d Rennen, Zeit-Offset: %ld ms, letzte Zeit: %lu ms\n",
+                              msg.raceCount, timeOffset, msg.lastFinishedTime);
+
+                // Aktualisiere WebSocket-Clients mit allen Daten
+                updateWebSocketClients();
+
+                // Sende auch die letzte Zeit, falls vorhanden
+                if (msg.lastFinishedTime > 0)
+                {
+                    wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(msg.lastFinishedTime) + "}");
+                }
+            }
+            else
+            {
+                Serial.printf("[SLAVE_DEBUG] Full-Sync von unbekanntem Master ignoriert: %s\n", macToString(msg.masterMac).c_str());
+            }
+        }
     }
 }

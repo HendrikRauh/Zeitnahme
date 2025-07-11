@@ -120,7 +120,33 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     }
     else if (len == sizeof(RaceUpdateMessage))
     {
-        handleRaceUpdate(incomingData, len);
+        // Prüfe Message-Typ
+        uint8_t messageType = incomingData[0];
+        if (messageType == MSG_TYPE_RACE_UPDATE)
+        {
+            RaceUpdateMessage msg;
+            memcpy(&msg, incomingData, sizeof(msg));
+            handleRaceUpdate((uint8_t *)&msg, len);
+        }
+        else
+        {
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für RaceUpdate-Größe\n", messageType);
+        }
+    }
+    else if (len == sizeof(FullSyncMessage))
+    {
+        // Prüfe Message-Typ
+        uint8_t messageType = incomingData[0];
+        if (messageType == MSG_TYPE_FULL_SYNC)
+        {
+            FullSyncMessage msg;
+            memcpy(&msg, incomingData, sizeof(msg));
+            handleFullSync((uint8_t *)&msg, len);
+        }
+        else
+        {
+            Serial.printf("[ESP_NOW_DEBUG] Unbekannter Message-Typ %d für FullSync-Größe\n", messageType);
+        }
     }
 }
 
@@ -352,11 +378,22 @@ void sendRaceUpdate()
         return;
 
     RaceUpdateMessage msg;
+    msg.messageType = MSG_TYPE_RACE_UPDATE;
     memcpy(msg.masterMac, getMacAddress(), 6);
-    msg.raceCount = raceQueue.size() > 10 ? 10 : raceQueue.size(); // Maximal 10 Rennen
+    msg.raceCount = raceQueue.size() > 5 ? 5 : raceQueue.size(); // Maximal 5 Rennen
     msg.timestamp = millis();
 
-    // Sende die Nachricht ohne Race-Details (vereinfachte Implementierung)
+    // Kopiere die aktuellen Race-Daten
+    int i = 0;
+    for (const auto &race : raceQueue)
+    {
+        if (i >= 5)
+            break; // Maximal 5 Rennen
+        msg.races[i] = race;
+        i++;
+    }
+
+    // Sende die vollständigen Race-Daten an alle Slaves
     for (const auto &dev : getSavedDevices())
     {
         if (memcmp(dev.mac, getMacAddress(), 6) != 0) // Nicht an sich selbst senden
@@ -364,5 +401,50 @@ void sendRaceUpdate()
             esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
         }
     }
-    Serial.printf("[MASTER_DEBUG] Race-Update an alle Slaves gesendet: %d Rennen\n", msg.raceCount);
+    Serial.printf("[MASTER_DEBUG] Vollständige Race-Daten an alle Slaves gesendet: %d Rennen\n", msg.raceCount);
+}
+
+void sendFullSync()
+{
+    if (!isMaster())
+        return;
+
+    FullSyncMessage msg;
+    msg.messageType = MSG_TYPE_FULL_SYNC;
+    memcpy(msg.masterMac, getMacAddress(), 6);
+    msg.masterTime = millis();
+    msg.timestamp = millis();
+
+    // Kopiere die aktuellen Race-Daten
+    int i = 0;
+    for (const auto &race : raceQueue)
+    {
+        if (i >= 5)
+            break; // Maximal 5 Rennen
+        msg.races[i] = race;
+        i++;
+    }
+    msg.raceCount = i;
+
+    // Finde die letzte beendete Zeit
+    msg.lastFinishedTime = 0;
+    for (auto it = raceQueue.rbegin(); it != raceQueue.rend(); ++it)
+    {
+        if (it->isFinished)
+        {
+            msg.lastFinishedTime = it->duration;
+            break;
+        }
+    }
+
+    // Sende vollständige Sync-Daten an alle Slaves
+    for (const auto &dev : getSavedDevices())
+    {
+        if (memcmp(dev.mac, getMacAddress(), 6) != 0) // Nicht an sich selbst senden
+        {
+            esp_now_send(dev.mac, (uint8_t *)&msg, sizeof(msg));
+        }
+    }
+    Serial.printf("[MASTER_DEBUG] Full-Sync an alle Slaves gesendet: %d Rennen, letzte Zeit: %lu ms\n",
+                  msg.raceCount, msg.lastFinishedTime);
 }

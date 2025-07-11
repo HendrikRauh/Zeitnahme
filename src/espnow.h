@@ -7,12 +7,24 @@
 #include <role.h>
 
 // Forward declarations
-struct RaceEntry;
+struct RaceEntry
+{
+    unsigned long startTime;
+    unsigned long startTimeLocal;  // Lokale Zeit des Start-Geräts
+    uint8_t startDevice[6];        // MAC des Start-Geräts
+    bool isFinished;               // Wurde das Rennen beendet?
+    unsigned long finishTime;      // Ziel-Zeit (nur wenn isFinished=true)
+    unsigned long finishTimeLocal; // Lokale Zeit des Ziel-Geräts
+    uint8_t finishDevice[6];       // MAC des Ziel-Geräts
+    unsigned long duration;        // Berechnete Dauer in ms
+};
 
 // Message-Typen
 #define MSG_TYPE_HEARTBEAT 1
 #define MSG_TYPE_TIME_SYNC_REQUEST 2
 #define MSG_TYPE_TIME_SYNC_RESPONSE 3
+#define MSG_TYPE_RACE_UPDATE 4
+#define MSG_TYPE_FULL_SYNC 5
 
 #define ESP_NOW_CHANNEL 8
 
@@ -59,9 +71,21 @@ struct TimeSyncResponseMessage
 
 struct RaceUpdateMessage
 {
+    uint8_t messageType; // 4 = RaceUpdate
     uint8_t masterMac[6];
     int raceCount;
-    // RaceEntry races[10]; // Entfernt - wird zur Laufzeit gehandhabt
+    RaceEntry races[5]; // Maximal 5 aktive Rennen gleichzeitig
+    unsigned long timestamp;
+};
+
+struct FullSyncMessage
+{
+    uint8_t messageType; // 5 = FullSync
+    uint8_t masterMac[6];
+    unsigned long masterTime;
+    int raceCount;
+    RaceEntry races[5];             // Aktuelle Rennen
+    unsigned long lastFinishedTime; // Letzte beendete Zeit
     unsigned long timestamp;
 };
 
@@ -91,5 +115,6 @@ void sendMasterHeartbeat();
 void sendTimeSyncRequest();
 void sendTimeSyncResponse(const uint8_t *requesterMac, unsigned long originalRequestTime, unsigned long sequenceNumber);
 void sendRaceUpdate();
+void sendFullSync();
 
 #endif

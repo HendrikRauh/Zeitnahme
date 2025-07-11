@@ -129,9 +129,20 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                     Serial.printf("[ROLE_DEBUG] Gerät %s ist bereits bekannt mit korrekter Rolle %s\n",
                                   macToString(senderMac).c_str(), roleToString(senderRole));
 
-                    // Aktualisiere lastSeen auch für bekannte Geräte
-                    updateTimeOffset(senderMac, 0); // Dies setzt auch isOnline = true
-                    hasChanges = true;              // Trigger Master-Neubestimmung
+                    // Aktualisiere lastSeen für bekannte Geräte OHNE Zeit-Offset zu ändern
+                    // Markiere Gerät als online in savedDevices
+                    for (auto &device : savedDevices)
+                    {
+                        if (memcmp(device.mac, senderMac, 6) == 0)
+                        {
+                            device.isOnline = true;
+                            device.lastSeen = millis();
+                            Serial.printf("[ROLE_DEBUG] Gerät %s als online markiert (Zeit-Offset beibehalten: %ld ms)\n",
+                                          macToString(senderMac).c_str(), device.timeOffset);
+                            break;
+                        }
+                    }
+                    hasChanges = true; // Trigger Master-Neubestimmung
                 }
                 break;
             }
