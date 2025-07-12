@@ -33,10 +33,8 @@ body {
     font-family: "NotoSansMonoBlack", monospace;
 }
 
-#settings-btn {
+.floating-btn {
     position: fixed;
-    right: 5vw;
-    bottom: 5vw;
     font-size: 2.5em;
     background: #fff;
     border: none;
@@ -48,14 +46,31 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s, opacity 0.5s;
+    transition: background 0.2s, opacity 0.5s, box-shadow 0.2s;
     z-index: 10;
     opacity: 1;
 }
 
-#settings-btn:active,
-#settings-btn:hover {
+#settings-btn {
+    right: 5vw;
+    bottom: 5vw;
+}
+
+#wakelock-btn {
+    left: 5vw;
+    bottom: 5vw;
+}
+
+.floating-btn:active,
+.floating-btn:hover {
     background: #eee;
+}
+
+#wakelock-btn.wakelock-success {
+    box-shadow: 0 0 0 4px #2ecc40, 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+#wakelock-btn.wakelock-fail {
+    box-shadow: 0 0 0 4px #ff4136, 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 #laufstatus-top,
@@ -66,6 +81,7 @@ body {
     margin: 0;
     line-height: 1.1;
     min-height: 1.2em;
+    -webkit-user-select: none;
     user-select: none;
     pointer-events: none;
 }
@@ -90,11 +106,17 @@ body {
         padding-left: 1vw;
         padding-right: 1vw;
     }
-    #settings-btn {
+    .floating-btn {
         width: 56px;
         height: 56px;
         font-size: 2em;
+    }
+    #settings-btn {
         right: 4vw;
+        bottom: 4vw;
+    }
+    #wakelock-btn {
+        left: 4vw;
         bottom: 4vw;
     }
     #laufstatus-top {
