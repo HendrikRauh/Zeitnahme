@@ -19,9 +19,13 @@ function formatDuration(ms) {
 }
 
 // Initial formatting
+
+// Buttons global verfügbar machen
+const settingsBtn = document.getElementById("settings-btn");
+const wakelockBtn = document.getElementById("wakelock-btn");
+
 document.addEventListener("DOMContentLoaded", function () {
     const zeitElement = document.getElementById("zeit");
-    const settingsBtn = document.getElementById("settings-btn");
 
     if (!settingsBtn) {
         console.warn(
@@ -33,15 +37,21 @@ document.addEventListener("DOMContentLoaded", function () {
     // Inaktivitäts-Timeout (z.B. 10 Sekunden)
     let hideTimeout;
     function showSettingsBtn() {
-        settingsBtn.style.transition = "opacity 0.5s";
-        settingsBtn.style.opacity = "1";
-        settingsBtn.style.pointerEvents = "auto";
-        settingsBtn.setAttribute("aria-hidden", "false");
+        [settingsBtn, wakelockBtn].forEach((btn) => {
+            if (!btn) return;
+            btn.style.transition = "opacity 0.5s";
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+            btn.setAttribute("aria-hidden", "false");
+        });
         clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
-            settingsBtn.style.opacity = "0";
-            settingsBtn.style.pointerEvents = "none";
-            settingsBtn.setAttribute("aria-hidden", "true");
+            [settingsBtn, wakelockBtn].forEach((btn) => {
+                if (!btn) return;
+                btn.style.opacity = "0";
+                btn.style.pointerEvents = "none";
+                btn.setAttribute("aria-hidden", "true");
+            });
         }, INACTIVITY_DELAY); // 10 Sekunden
     }
 
@@ -120,3 +130,183 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => updateLaufstatus(Number(data.count)))
         .catch(() => updateLaufstatus(0));
 });
+
+// --- Bildschirm-Wachhalten & Fullscreen (Wake Lock API) ---
+// Button mit Blitz-Icon aktiviert Fullscreen und verhindert Sleep
+let wakeLock = null;
+async function requestWakeLock() {
+    try {
+        if ("wakeLock" in navigator && location.protocol === "https:") {
+            wakeLock = await navigator.wakeLock.request("screen");
+            wakeLock.addEventListener("release", () => {
+                console.log("Wake Lock wurde freigegeben");
+            });
+            console.log("Wake Lock aktiviert");
+            setWakelockBtnFeedback("success");
+        } else {
+            // Fallback: Dummy-Video
+            startDummyVideo();
+            setWakelockBtnFeedback("success");
+            console.log("Dummy-Video-WakeLock aktiviert (Fallback)");
+        }
+    } catch (err) {
+        setWakelockBtnFeedback("fail");
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+function setWakelockBtnFeedback(state) {
+    if (!wakelockBtn) return;
+    wakelockBtn.classList.remove("wakelock-success", "wakelock-fail");
+    if (state === "success") {
+        wakelockBtn.classList.add("wakelock-success");
+        setTimeout(() => wakelockBtn.classList.remove("wakelock-success"), 800);
+    } else if (state === "fail") {
+        wakelockBtn.classList.add("wakelock-fail");
+        setTimeout(() => wakelockBtn.classList.remove("wakelock-fail"), 800);
+    }
+}
+
+async function releaseWakeLock() {
+    if (wakeLock && typeof wakeLock.release === "function") {
+        try {
+            await wakeLock.release();
+            wakeLock = null;
+            console.log("Wake Lock deaktiviert");
+        } catch (e) {
+            console.error("Fehler beim Freigeben des Wake Lock:", e);
+        }
+    }
+    // Dummy-Video stoppen (Fallback)
+    stopDummyVideo();
+}
+
+let fullscreenActive = false;
+async function toggleFullscreenAndWakeLock() {
+    if (!fullscreenActive) {
+        // Fullscreen aktivieren
+        const docElm = document.documentElement;
+        if (docElm.requestFullscreen) {
+            await docElm.requestFullscreen();
+        } else if (docElm.webkitRequestFullscreen) {
+            await docElm.webkitRequestFullscreen();
+        } else if (docElm.msRequestFullscreen) {
+            await docElm.msRequestFullscreen();
+        }
+        // Wake Lock anfordern
+        await requestWakeLock();
+    } else {
+        // Fullscreen verlassen
+        if (
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.msFullscreenElement
+        ) {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                await document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                await document.msExitFullscreen();
+            }
+        }
+        // Wake Lock freigeben
+        await releaseWakeLock();
+    }
+}
+
+if (wakelockBtn) {
+    wakelockBtn.addEventListener("click", toggleFullscreenAndWakeLock);
+}
+
+// Fullscreen-Status überwachen, Settings-Button im Fullscreen ausblenden
+function updateFullscreenState() {
+    fullscreenActive = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
+    );
+    if (settingsBtn) {
+        settingsBtn.style.display = fullscreenActive ? "none" : "";
+    }
+    // Optional: Symbol des wakelock-Buttons ändern
+    if (wakelockBtn) {
+        wakelockBtn.innerText = fullscreenActive ? "❌" : "⚡";
+    }
+}
+
+document.addEventListener("fullscreenchange", updateFullscreenState);
+document.addEventListener("webkitfullscreenchange", updateFullscreenState);
+document.addEventListener("msfullscreenchange", updateFullscreenState);
+
+// Wake Lock automatisch erneut anfordern, wenn die Seite wieder sichtbar wird
+document.addEventListener("visibilitychange", () => {
+    if (
+        wakeLock !== null &&
+        document.visibilityState === "visible" &&
+        fullscreenActive
+    ) {
+        requestWakeLock();
+    }
+});
+
+// --- Dummy-Video-Workaround für Wake Lock (z.B. für Firefox/HTTP) ---
+let dummyVideo = null;
+function startDummyVideo() {
+    if (dummyVideo) return;
+    // Canvas erzeugen
+    const canvas = document.createElement("canvas");
+    canvas.width = 80;
+    canvas.height = 60;
+    canvas.style.position = "fixed";
+    canvas.style.left = "10px";
+    canvas.style.top = "10px";
+    canvas.style.zIndex = "9999";
+    canvas.style.opacity = "1";
+    document.body.appendChild(canvas);
+
+    // Animations-Loop: Farbe wechselt
+    const ctx = canvas.getContext("2d");
+    let hue = 0;
+    let running = true;
+    function draw() {
+        if (!running) return;
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        hue = (hue + 2) % 360;
+        requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Canvas als Video-Stream
+    const stream = canvas.captureStream(15); // 15 FPS
+    dummyVideo = document.createElement("video");
+    dummyVideo.muted = true;
+    dummyVideo.playsInline = true;
+    dummyVideo.srcObject = stream;
+    dummyVideo.width = 80;
+    dummyVideo.height = 60;
+    dummyVideo.style.position = "fixed";
+    dummyVideo.style.left = "10px";
+    dummyVideo.style.top = "10px";
+    dummyVideo.style.width = "80px";
+    dummyVideo.style.height = "60px";
+    dummyVideo.style.opacity = "1";
+    document.body.appendChild(dummyVideo);
+    dummyVideo.play().catch(() => {});
+
+    // Stop-Logik für Canvas und Video
+    dummyVideo._stopDummy = function () {
+        running = false;
+        canvas.remove();
+        dummyVideo.pause();
+        dummyVideo.remove();
+        dummyVideo = null;
+    };
+}
+
+function stopDummyVideo() {
+    if (dummyVideo && typeof dummyVideo._stopDummy === "function") {
+        dummyVideo._stopDummy();
+    }
+}
