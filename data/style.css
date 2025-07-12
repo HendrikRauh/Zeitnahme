@@ -23,7 +23,7 @@ body {
 }
 
 #zeit {
-    font-size: clamp(5rem, 20vw, 22rem);
+    font-size: clamp(2rem, 20vw, 22rem);
     line-height: 1.22;
     margin-bottom: 0.2em;
     margin-top: 0;
@@ -87,7 +87,6 @@ body {
 
 @media (max-width: 600px) {
     #zeit {
-        font-size: clamp(2.2rem, 20vw, 6.5rem);
         padding-left: 1vw;
         padding-right: 1vw;
     }
@@ -103,10 +102,5 @@ body {
     }
     #laufstatus-bottom {
         font-size: 12vw;
-    }
-}
-@media (orientation: landscape) and (max-width: 900px) {
-    #zeit {
-        font-size: clamp(2.5rem, 20vw, 8rem);
     }
 }
