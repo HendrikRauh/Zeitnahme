@@ -259,10 +259,11 @@ function startDummyVideo() {
     canvas.width = 80;
     canvas.height = 60;
     canvas.style.position = "fixed";
-    canvas.style.left = "10px";
-    canvas.style.top = "10px";
-    canvas.style.zIndex = "9999";
-    canvas.style.opacity = "1";
+    canvas.style.left = "-9999px"; // Offscreen
+    canvas.style.top = "-9999px";
+    canvas.style.zIndex = "-1";
+    canvas.style.opacity = "0";
+    canvas.style.pointerEvents = "none";
     document.body.appendChild(canvas);
 
     // Animations-Loop: Farbe wechselt
@@ -287,11 +288,13 @@ function startDummyVideo() {
     dummyVideo.width = 80;
     dummyVideo.height = 60;
     dummyVideo.style.position = "fixed";
-    dummyVideo.style.left = "10px";
-    dummyVideo.style.top = "10px";
+    dummyVideo.style.left = "-9999px"; // Offscreen
+    dummyVideo.style.top = "-9999px";
     dummyVideo.style.width = "80px";
     dummyVideo.style.height = "60px";
-    dummyVideo.style.opacity = "1";
+    dummyVideo.style.opacity = "0";
+    dummyVideo.style.pointerEvents = "none";
+    dummyVideo.style.zIndex = "-1";
     document.body.appendChild(dummyVideo);
     dummyVideo.play().catch(() => {});
 
