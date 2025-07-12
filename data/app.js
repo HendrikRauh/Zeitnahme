@@ -233,6 +233,11 @@ function updateFullscreenState() {
     if (wakelockBtn) {
         wakelockBtn.innerText = fullscreenActive ? "❌" : "⚡";
     }
+
+    // Dummy-Video stoppen, wenn Fullscreen verlassen wird
+    if (!fullscreenActive) {
+        stopDummyVideo();
+    }
 }
 
 document.addEventListener("fullscreenchange", updateFullscreenState);
