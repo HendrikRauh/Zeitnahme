@@ -1,3 +1,10 @@
+@font-face {
+    font-family: "NotoSansMonoBlack";
+    src: url("/NotoSansMono-Black.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 html,
 body {
     height: 100%;
@@ -16,12 +23,14 @@ body {
 }
 
 #zeit {
-    font-size: 10vw;
-    font-family: monospace;
-    margin-bottom: 0.5em;
+    font-size: clamp(2rem, 20vw, 22rem);
+    line-height: 1.22;
+    margin-bottom: 0.2em;
+    margin-top: 0;
     word-break: break-all;
     text-align: center;
     color: #222;
+    font-family: "NotoSansMonoBlack", monospace;
 }
 
 #settings-btn {
@@ -78,7 +87,8 @@ body {
 
 @media (max-width: 600px) {
     #zeit {
-        font-size: 14vw;
+        padding-left: 1vw;
+        padding-right: 1vw;
     }
     #settings-btn {
         width: 56px;
@@ -87,7 +97,9 @@ body {
         right: 4vw;
         bottom: 4vw;
     }
-    #laufstatus-top,
+    #laufstatus-top {
+        font-size: 12vw;
+    }
     #laufstatus-bottom {
         font-size: 12vw;
     }

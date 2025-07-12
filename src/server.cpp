@@ -86,6 +86,11 @@ void initWebsocket()
 
 void initWebpage()
 {
+  server.on("/NotoSansMono-Black.ttf", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/NotoSansMono-Black.ttf.gz", "font/ttf");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response); });
   // LittleFS initialisieren
   if (!LittleFS.begin(true))
   {
