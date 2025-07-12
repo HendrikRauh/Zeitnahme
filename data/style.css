@@ -23,8 +23,10 @@ body {
 }
 
 #zeit {
-    font-size: 10vw;
-    margin-bottom: 0.5em;
+    font-size: clamp(5rem, 20vw, 22rem);
+    line-height: 1.22;
+    margin-bottom: 0.2em;
+    margin-top: 0;
     word-break: break-all;
     text-align: center;
     color: #222;
@@ -85,7 +87,9 @@ body {
 
 @media (max-width: 600px) {
     #zeit {
-        font-size: 14vw;
+        font-size: clamp(2.2rem, 20vw, 6.5rem);
+        padding-left: 1vw;
+        padding-right: 1vw;
     }
     #settings-btn {
         width: 56px;
@@ -94,8 +98,15 @@ body {
         right: 4vw;
         bottom: 4vw;
     }
-    #laufstatus-top,
+    #laufstatus-top {
+        font-size: 12vw;
+    }
     #laufstatus-bottom {
         font-size: 12vw;
+    }
+}
+@media (orientation: landscape) and (max-width: 900px) {
+    #zeit {
+        font-size: clamp(2.5rem, 20vw, 8rem);
     }
 }
