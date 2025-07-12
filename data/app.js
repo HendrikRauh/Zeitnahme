@@ -266,7 +266,7 @@ function startDummyVideo() {
     canvas.style.pointerEvents = "none";
     document.body.appendChild(canvas);
 
-    // Animations-Loop: Farbe wechselt
+    // Animations-Loop: Farbe wechselt (nur 2 FPS)
     const ctx = canvas.getContext("2d");
     let hue = 0;
     let running = true;
@@ -274,13 +274,13 @@ function startDummyVideo() {
         if (!running) return;
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        hue = (hue + 2) % 360;
-        requestAnimationFrame(draw);
+        hue = (hue + 10) % 360;
+        setTimeout(draw, 500); // 2 FPS
     }
     draw();
 
-    // Canvas als Video-Stream
-    const stream = canvas.captureStream(15); // 15 FPS
+    // Canvas als Video-Stream (2 FPS reichen für WakeLock)
+    const stream = canvas.captureStream(2); // 2 FPS
     dummyVideo = document.createElement("video");
     dummyVideo.muted = true;
     dummyVideo.playsInline = true;
