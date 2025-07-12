@@ -135,49 +135,14 @@ document.addEventListener("DOMContentLoaded", function () {
 // Button mit Blitz-Icon aktiviert Fullscreen und verhindert Sleep
 let wakeLock = null;
 async function requestWakeLock() {
-    try {
-        if ("wakeLock" in navigator && location.protocol === "https:") {
-            wakeLock = await navigator.wakeLock.request("screen");
-            wakeLock.addEventListener("release", () => {
-                console.log("Wake Lock wurde freigegeben");
-            });
-            console.log("Wake Lock aktiviert");
-            setWakelockBtnFeedback("success");
-        } else {
-            // Fallback: Dummy-Video
-            startDummyVideo();
-            setWakelockBtnFeedback("success");
-            console.log("Dummy-Video-WakeLock aktiviert (Fallback)");
-        }
-    } catch (err) {
-        setWakelockBtnFeedback("fail");
-        console.error(`${err.name}, ${err.message}`);
-    }
+    // Immer Dummy-Video verwenden (HTTP/Firefox)
+    startDummyVideo();
+    console.log("Dummy-Video-WakeLock aktiviert");
 }
 
-function setWakelockBtnFeedback(state) {
-    if (!wakelockBtn) return;
-    wakelockBtn.classList.remove("wakelock-success", "wakelock-fail");
-    if (state === "success") {
-        wakelockBtn.classList.add("wakelock-success");
-        setTimeout(() => wakelockBtn.classList.remove("wakelock-success"), 800);
-    } else if (state === "fail") {
-        wakelockBtn.classList.add("wakelock-fail");
-        setTimeout(() => wakelockBtn.classList.remove("wakelock-fail"), 800);
-    }
-}
 
 async function releaseWakeLock() {
-    if (wakeLock && typeof wakeLock.release === "function") {
-        try {
-            await wakeLock.release();
-            wakeLock = null;
-            console.log("Wake Lock deaktiviert");
-        } catch (e) {
-            console.error("Fehler beim Freigeben des Wake Lock:", e);
-        }
-    }
-    // Dummy-Video stoppen (Fallback)
+    // Dummy-Video stoppen
     stopDummyVideo();
 }
 
