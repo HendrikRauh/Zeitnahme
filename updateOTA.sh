@@ -7,8 +7,9 @@ UPLOAD_PROTOCOL="espota"
 UPDATE_TYPE=""
 
 # Parameter auswerten
-if [ "$1" = "fw" ] || [ "$1" = "FS" ] || [ "$1" = "fs" ] || [ "$1" = "FW" ]; then
-    UPDATE_TYPE="${1,,}"
+arg="${1,,}"
+if [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
+    UPDATE_TYPE="$arg"
 fi
 
 
