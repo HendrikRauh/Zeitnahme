@@ -45,7 +45,6 @@ disconnect_wifi() {
 # Status-Arrays für Übersicht
 declare -A STATUS_FW
 declare -A STATUS_FS
-declare -A STATUS_MAC
 
 
 
@@ -106,7 +105,6 @@ main() {
         echo -e "${BLUE}=== Verbinde mit >$clean_ssid< ===${NC}"
         connect_wifi "$clean_ssid"
         sleep 3
-        STATUS_MAC["$clean_ssid"]="$clean_ssid"
         if ip addr show "$WIFI_IFACE" | grep -q '192.168.4.'; then
             echo -e "${GREEN}✅ Verbunden mit $clean_ssid${NC}"
             ESP_IP="192.168.4.1"
