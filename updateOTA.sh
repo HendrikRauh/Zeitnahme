@@ -1,11 +1,14 @@
 #!/bin/bash
+set -euo pipefail
 
 
 # Update-Typ: fw (Firmware), fs (Filesystem), leer = beides
 UPDATE_TYPE=""
 
-# Parameter auswerten
-arg="${1,,}"
+
+# Parameter auswerten (robust gegen nicht gesetztes $1)
+arg="${1:-}"
+arg="${arg,,}"
 if [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
     UPDATE_TYPE="$arg"
 fi
