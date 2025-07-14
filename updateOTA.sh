@@ -122,9 +122,6 @@ main() {
     # Nach dem Update wieder mit vorherigem WLAN verbinden
     if [ -n "$PREV_SSID" ]; then
         # Rückverbindung mit vorherigem WLAN
-        # Alle WLAN-Verbindungen trennen
-        nmcli con show --active | awk '/wifi/ {print $1}' | while read -r con; do nmcli con down "$con"; done
-        sleep 1
         # Explizit das alte WLAN aktivieren (Profil bevorzugt)
         if nmcli con up id "$PREV_SSID" >/dev/null 2>&1; then
             sleep 3
