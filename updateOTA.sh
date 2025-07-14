@@ -47,7 +47,6 @@ declare -A STATUS_FS
 declare -A STATUS_MAC
 
 
-# Funktion: OTA-Update durchführen
 
 # Funktion: OTA-Update durchführen (je nach UPDATE_TYPE)
 run_ota_update() {
