@@ -95,7 +95,7 @@ run_ota_update() {
 
 main() {
     # Aktuell verbundenes WLAN merken (nur mit nmcli, sprachunabhängig)
-    PREV_SSID=$(nmcli -t -f active,ssid dev wifi | grep -E '^(yes|ja):' | cut -d: -f2-)
+    PREV_SSID=$(nmcli -t -f DEVICE,TYPE,STATE,CONNECTION dev | awk -F: '$3=="connected" && $2=="wifi" {print $4}')
     
     mapfile -t ESP_SSIDS < <(find_esp_ssids)
     if [ ${#ESP_SSIDS[@]} -eq 0 ]; then
