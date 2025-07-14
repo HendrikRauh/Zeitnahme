@@ -44,11 +44,12 @@ disconnect_wifi() {
 
 
 # Status-Arrays für Übersicht
+
+
+
 declare -A STATUS_FW
 declare -A STATUS_FS
-
-
-
+declare -A DURATION_FW
 declare -A DURATION_FS
 
 # Funktion: OTA-Update durchführen (je nach UPDATE_TYPE)
