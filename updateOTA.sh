@@ -149,6 +149,7 @@ main() {
     
     # Übersicht als Liste mit Dauer
     echo -e "\n${BLUE}=== OTA-Update-Prozess abgeschlossen ===${NC}"
+    OTA_FAILED=0
     for ssid in "${ESP_SSIDS[@]}"; do
         clean_ssid="${ssid//\\:/:}"
         ssid_hash=$(echo -n "$clean_ssid" | md5sum | awk '{print $1}')
@@ -157,14 +158,19 @@ main() {
             fw="${STATUS_FW[$ssid_hash]:-⚪}"
             dur_fw="${DURATION_FW[$ssid_hash]:-n/a}"
             echo -e "  Firmware: $fw  (${dur_fw}s)"
+            if [ "$fw" = "🔴" ]; then OTA_FAILED=1; fi
         fi
         if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
             fs="${STATUS_FS[$ssid_hash]:-⚪}"
             dur_fs="${DURATION_FS[$ssid_hash]:-n/a}"
             echo -e "  Filesystem: $fs  (${dur_fs}s)"
+            if [ "$fs" = "🔴" ]; then OTA_FAILED=1; fi
         fi
         echo
     done
+    if [ $OTA_FAILED -ne 0 ]; then
+        exit 1
+    fi
 }
 
 main "$@"
