@@ -1,6 +1,15 @@
 #!/bin/bash
+
 # OTA/USB Umschaltung: "espota" für OTA, "esptool" für USB, oder leer für Standard aus platformio.ini
 UPLOAD_PROTOCOL="espota"
+
+# Update-Typ: fw (Firmware), fs (Filesystem), leer = beides
+UPDATE_TYPE=""
+
+# Parameter auswerten
+if [ "$1" = "fw" ] || [ "$1" = "FS" ] || [ "$1" = "fs" ] || [ "$1" = "FW" ]; then
+    UPDATE_TYPE="${1,,}"
+fi
 
 
 # Farben definieren
@@ -39,20 +48,33 @@ declare -A STATUS_MAC
 
 
 # Funktion: OTA-Update durchführen
+
+# Funktion: OTA-Update durchführen (je nach UPDATE_TYPE)
 run_ota_update() {
     local ip="$1"
     local ssid="$2"
-    echo -e "${YELLOW}⚙️  OTA Firmware-Update für $ssid...${NC}"
-    PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
-    local fw_status=$?
-    STATUS_FW["$ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
-    
-    echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $ssid...${NC}"
-    PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
-    local fs_status=$?
-    STATUS_FS["$ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
-    
-    if [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; then
+    local fw_status=0
+    local fs_status=0
+
+    if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fw" ]; then
+        echo -e "${YELLOW}⚙️  OTA Firmware-Update für $ssid...${NC}"
+        PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
+        fw_status=$?
+        STATUS_FW["$ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
+    fi
+
+    if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
+        echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $ssid...${NC}"
+        PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
+        fs_status=$?
+        STATUS_FS["$ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
+    fi
+
+    # Erfolgsmeldung je nach Update-Typ
+    if { [ "$UPDATE_TYPE" = "fw" ] && [ $fw_status -eq 0 ]; } || \
+       { [ "$UPDATE_TYPE" = "fs" ] && [ $fs_status -eq 0 ]; } || \
+       { [ -z "$UPDATE_TYPE" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; }
+    then
         echo -e "${GREEN}✅ OTA-Update für $ssid erfolgreich!${NC}"
     else
         echo -e "${RED}❌ OTA-Update für $ssid fehlgeschlagen!${NC}"
