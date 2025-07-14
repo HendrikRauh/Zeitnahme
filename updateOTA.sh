@@ -18,8 +18,11 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# WLAN Interface und Passwort (ggf. anpassen)
-WIFI_IFACE="wlp0s20f3"
+# WLAN Interface dynamisch bestimmen
+WIFI_IFACE=$(nmcli -t -f DEVICE,TYPE,STATE dev | awk -F: '$2=="wifi" && $3=="connected"{print $1; exit}')
+if [ -z "$WIFI_IFACE" ]; then
+    WIFI_IFACE=$(nmcli -t -f DEVICE,TYPE dev | awk -F: '$2=="wifi"{print $1; exit}')
+fi
 WIFI_PASS=""
 
 
