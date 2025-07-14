@@ -55,25 +55,25 @@ run_ota_update() {
     local ssid="$2"
     local fw_status=0
     local fs_status=0
-
+    
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fw" ]; then
         echo -e "${YELLOW}⚙️  OTA Firmware-Update für $ssid...${NC}"
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
         fw_status=$?
         STATUS_FW["$ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
     fi
-
+    
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
         echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $ssid...${NC}"
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
         fs_status=$?
         STATUS_FS["$ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
     fi
-
+    
     # Erfolgsmeldung je nach Update-Typ
     if { [ "$UPDATE_TYPE" = "fw" ] && [ $fw_status -eq 0 ]; } || \
-       { [ "$UPDATE_TYPE" = "fs" ] && [ $fs_status -eq 0 ]; } || \
-       { [ -z "$UPDATE_TYPE" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; }
+    { [ "$UPDATE_TYPE" = "fs" ] && [ $fs_status -eq 0 ]; } || \
+    { [ -z "$UPDATE_TYPE" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; }
     then
         echo -e "${GREEN}✅ OTA-Update für $ssid erfolgreich!${NC}"
     else
@@ -93,6 +93,13 @@ main() {
         echo -e "${RED}❌ Keine passenden ESP-WLANs gefunden!${NC}"
         exit 1
     fi
+    
+    echo -e "\n${YELLOW}🚀 Starte OTA-Update für folgende Geräte:${NC}"
+    for ssid in "${ESP_SSIDS[@]}"; do
+        clean_ssid="${ssid//\\:/:}"
+        echo -e "  ${BLUE}- $clean_ssid${NC}"
+    done
+    echo
     
     for ssid in "${ESP_SSIDS[@]}"; do
         clean_ssid="${ssid//\\:/:}"
