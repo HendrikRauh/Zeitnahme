@@ -61,7 +61,11 @@ run_ota_update() {
 
 
 # Hauptlogik
+
 main() {
+    # Aktuell verbundenes WLAN merken (nur mit nmcli, sprachunabhängig)
+    PREV_SSID=$(nmcli -t -f active,ssid dev wifi | grep -E '^(yes|ja):' | cut -d: -f2-)
+    
     mapfile -t ESP_SSIDS < <(find_esp_ssids)
     if [ ${#ESP_SSIDS[@]} -eq 0 ]; then
         echo -e "${RED}❌ Keine passenden ESP-WLANs gefunden!${NC}"
@@ -86,6 +90,25 @@ main() {
         echo -e "${BLUE}---${NC}"
     done
     
+    # Nach dem Update wieder mit vorherigem WLAN verbinden
+    if [ -n "$PREV_SSID" ]; then
+        # Rückverbindung mit vorherigem WLAN
+        # Alle WLAN-Verbindungen trennen
+        nmcli con show --active | awk '/wifi/ {print $1}' | while read -r con; do nmcli con down "$con"; done
+        sleep 1
+        # Explizit das alte WLAN aktivieren (Profil bevorzugt)
+        if nmcli con up id "$PREV_SSID" >/dev/null 2>&1; then
+            sleep 3
+            if nmcli -t -f active,ssid dev wifi | grep -E '^(yes|ja):' | grep -q ":$PREV_SSID$"; then
+                echo -e "${GREEN}✅ Wieder verbunden mit $PREV_SSID${NC}"
+            else
+                echo -e "${RED}❌ Rückverbindung zu $PREV_SSID fehlgeschlagen!${NC}"
+            fi
+        else
+            echo -e "${RED}❌ Konnte gespeichertes Profil für $PREV_SSID nicht aktivieren!${NC}"
+        fi
+    fi
+    
     # Dynamische Übersichtstabelle
     echo -e "${BLUE}=== OTA-Update-Prozess abgeschlossen ===${NC}"
     # Feste Display-Width für Gerätenamen: Emoji + Leer + 8 Zeichen = 11
@@ -98,11 +121,17 @@ main() {
     printf '\n%s\n' "$border_top"
     printf "│ %-${maxlen}s │ %-2s │ %-2s │\n" "Gerät" "F" "S"
     printf '%s\n' "$border_mid"
-    for ssid in "${ESP_SSIDS[@]}"; do
+    count=${#ESP_SSIDS[@]}
+    for i in "${!ESP_SSIDS[@]}"; do
+        ssid="${ESP_SSIDS[$i]}"
         clean_ssid="${ssid//\\:/:}"
         fw="${STATUS_FW[$clean_ssid]:-⚪}"
         fs="${STATUS_FS[$clean_ssid]:-⚪}"
         printf "│ %-${maxlen}s │ %-2s │ %-2s │\n" "$clean_ssid" "$fw" "$fs"
+        # Horizontale Linie außer nach dem letzten Gerät
+        if [ $i -lt $((count-1)) ]; then
+            printf '%s\n' "$border_mid"
+        fi
     done
     printf '%s\n' "$border_bot"
 }
@@ -111,4 +140,3 @@ main "$@"
 
 
 # Übersichtstabelle (am Skriptende, entfernt da bereits in main enthalten)
-# (Falls doppelt, bitte nur in main anzeigen)
