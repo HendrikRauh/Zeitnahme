@@ -34,7 +34,11 @@ find_esp_ssids() {
 # Funktion: Mit WLAN verbinden
 connect_wifi() {
     local ssid="$1"
-    nmcli dev wifi connect "$ssid" password "$WIFI_PASS" ifname "$WIFI_IFACE" >/dev/null 2>&1
+    if [ -n "$WIFI_PASS" ]; then
+        nmcli dev wifi connect "$ssid" password "$WIFI_PASS" ifname "$WIFI_IFACE" >/dev/null 2>&1
+    else
+        nmcli dev wifi connect "$ssid" ifname "$WIFI_IFACE" >/dev/null 2>&1
+    fi
 }
 
 # Funktion: WLAN trennen
