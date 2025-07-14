@@ -51,6 +51,7 @@ void masterTask(void *pvParameters)
     }
 }
 
+TaskHandle_t masterTaskHandle = NULL;
 void initMasterTask()
 {
     xTaskCreatePinnedToCore(
@@ -59,6 +60,6 @@ void initMasterTask()
         4096,
         NULL,
         1,
-        NULL,
+        &masterTaskHandle,
         0); // Auf Core 0 laufen lassen
 }
