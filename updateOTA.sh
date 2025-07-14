@@ -48,6 +48,8 @@ declare -A STATUS_FS
 
 
 
+declare -A DURATION_FS
+
 # Funktion: OTA-Update durchführen (je nach UPDATE_TYPE)
 run_ota_update() {
     local ip="$1"
@@ -55,21 +57,30 @@ run_ota_update() {
     local fw_status=0
     local fs_status=0
     local clean_ssid="${ssid//\\:/:}"
-    
+    # Hash für Array-Key erzeugen (nur Kleinbuchstaben und Zahlen)
+    local ssid_hash
+    ssid_hash=$(echo -n "$clean_ssid" | md5sum | awk '{print $1}')
+    local start_fw end_fw start_fs end_fs
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fw" ]; then
         echo -e "${YELLOW}⚙️  OTA Firmware-Update für $ssid...${NC}"
+        start_fw=$(date +%s.%N)
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
         fw_status=$?
-        STATUS_FW["$clean_ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
+        end_fw=$(date +%s.%N)
+        STATUS_FW["$ssid_hash"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
+        DURATION_FW["$ssid_hash"]=$(awk "BEGIN {print sprintf(\"%.2f\", $end_fw - $start_fw)}")
     fi
-    
+
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
         echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $ssid...${NC}"
+        start_fs=$(date +%s.%N)
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
         fs_status=$?
-        STATUS_FS["$clean_ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
+        end_fs=$(date +%s.%N)
+        STATUS_FS["$ssid_hash"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
+        DURATION_FS["$ssid_hash"]=$(awk "BEGIN {print sprintf(\"%.2f\", $end_fs - $start_fs)}")
     fi
-    
+
     # Erfolgsmeldung je nach Update-Typ
     if { [ "$UPDATE_TYPE" = "fw" ] && [ $fw_status -eq 0 ]; } || \
     { [ "$UPDATE_TYPE" = "fs" ] && [ $fs_status -eq 0 ]; } || \
@@ -134,31 +145,24 @@ main() {
         fi
     fi
     
-    # Dynamische Übersichtstabelle
-    echo -e "${BLUE}=== OTA-Update-Prozess abgeschlossen ===${NC}"
-    # Feste Display-Width für Gerätenamen: Emoji + Leer + 8 Zeichen = 11
-    maxlen=11
-    # Tabellen-Borders dynamisch generieren
-    border_top="┌$(printf '─%.0s' $(seq 1 $((maxlen+1))))┬────┬────┐"
-    border_mid="├$(printf '─%.0s' $(seq 1 $((maxlen+1))))┼────┼────┤"
-    border_bot="└$(printf '─%.0s' $(seq 1 $((maxlen+1))))┴────┴────┘"
-    # Tabelle ausgeben
-    printf '\n%s\n' "$border_top"
-    printf "│ %-${maxlen}s │ %-2s │ %-2s │\n" "Gerät" "F" "S"
-    printf '%s\n' "$border_mid"
-    count=${#ESP_SSIDS[@]}
-    for i in "${!ESP_SSIDS[@]}"; do
-        ssid="${ESP_SSIDS[$i]}"
+    # Übersicht als Liste mit Dauer
+    echo -e "\n${BLUE}=== OTA-Update-Prozess abgeschlossen ===${NC}"
+    for ssid in "${ESP_SSIDS[@]}"; do
         clean_ssid="${ssid//\\:/:}"
-        fw="${STATUS_FW[$clean_ssid]:-⚪}"
-        fs="${STATUS_FS[$clean_ssid]:-⚪}"
-        printf "│ %-${maxlen}s │ %-2s │ %-2s │\n" "$clean_ssid" "$fw" "$fs"
-        # Horizontale Linie außer nach dem letzten Gerät
-        if [ $i -lt $((count-1)) ]; then
-            printf '%s\n' "$border_mid"
+        ssid_hash=$(echo -n "$clean_ssid" | md5sum | awk '{print $1}')
+        echo -e "${YELLOW}Gerät: $clean_ssid${NC}"
+        if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fw" ]; then
+            fw="${STATUS_FW[$ssid_hash]:-⚪}"
+            dur_fw="${DURATION_FW[$ssid_hash]:-n/a}"
+            echo -e "  Firmware: $fw  (${dur_fw}s)"
         fi
+        if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
+            fs="${STATUS_FS[$ssid_hash]:-⚪}"
+            dur_fs="${DURATION_FS[$ssid_hash]:-n/a}"
+            echo -e "  Filesystem: $fs  (${dur_fs}s)"
+        fi
+        echo
     done
-    printf '%s\n' "$border_bot"
 }
 
 main "$@"
