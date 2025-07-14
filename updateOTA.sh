@@ -54,19 +54,20 @@ run_ota_update() {
     local ssid="$2"
     local fw_status=0
     local fs_status=0
+    local clean_ssid="${ssid//\\:/:}"
     
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fw" ]; then
         echo -e "${YELLOW}⚙️  OTA Firmware-Update für $ssid...${NC}"
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
         fw_status=$?
-        STATUS_FW["$ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
+        STATUS_FW["$clean_ssid"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
     fi
     
     if [ -z "$UPDATE_TYPE" ] || [ "$UPDATE_TYPE" = "fs" ]; then
         echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $ssid...${NC}"
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
         fs_status=$?
-        STATUS_FS["$ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
+        STATUS_FS["$clean_ssid"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
     fi
     
     # Erfolgsmeldung je nach Update-Typ
