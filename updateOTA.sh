@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# OTA/USB Umschaltung: "espota" für OTA, "esptool" für USB, oder leer für Standard aus platformio.ini
-UPLOAD_PROTOCOL="espota"
 
 # Update-Typ: fw (Firmware), fs (Filesystem), leer = beides
 UPDATE_TYPE=""
