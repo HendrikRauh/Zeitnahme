@@ -164,4 +164,3 @@ main() {
 main "$@"
 
 
-# Übersichtstabelle (am Skriptende, entfernt da bereits in main enthalten)
