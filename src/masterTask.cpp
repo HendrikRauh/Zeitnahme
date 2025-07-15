@@ -1,5 +1,7 @@
 #include <task.h>
 
+TaskHandle_t masterTaskHandle = NULL;
+
 void masterTask(void *pvParameters)
 {
     unsigned long lastHeartbeat = 0;
@@ -59,6 +61,6 @@ void initMasterTask()
         4096,
         NULL,
         1,
-        NULL,
+        &masterTaskHandle,
         0); // Auf Core 0 laufen lassen
 }

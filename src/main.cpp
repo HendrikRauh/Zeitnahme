@@ -1,4 +1,9 @@
 
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "ota.h"
+
 #include <ArduinoJson.h>
 #include <deviceInfo.h>
 #include <espnow.h>
@@ -12,6 +17,7 @@ char macStr[18] = {0};
 
 void setup()
 {
+
   Serial.begin(115200);
   initDeviceInfo();
   initWebpage();
@@ -45,12 +51,13 @@ void setup()
     syncTimeWithMaster();
   }
 
+  setupOTA();
+
   Serial.printf("[MASTER_DEBUG] Setup abgeschlossen - Status: %s\n", masterStatusToString(getMasterStatus()).c_str());
 }
 
 void loop()
 {
-  // Die Hauptlogik läuft jetzt in separaten Tasks
-  // Minimale Verzögerung für bessere Performance
-  delay(100);
+  // Verhindert Busy-Waiting, gibt CPU-Zeit frei, verbessert Timing für Sensoren
+  vTaskDelay(pdMS_TO_TICKS(1)); // 1 ms Pause, tickratenunabhängig
 }

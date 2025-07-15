@@ -6,6 +6,7 @@
 #include <espnow.h>
 #include <Utility.h>
 
+extern TaskHandle_t masterTaskHandle;
 void initMasterTask();
 void cleanupFinishedRaces();
 
