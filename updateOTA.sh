@@ -104,9 +104,33 @@ run_ota_update() {
 
 # Hauptlogik
 
+
+# Cleanup-Funktion für Lastwill (WLAN wiederherstellen und Nachricht ausgeben)
+__CLEANUP_CALLED=0
+cleanup() {
+    if [ "$__CLEANUP_CALLED" -eq 1 ]; then return; fi
+    __CLEANUP_CALLED=1
+    if [ -n "$PREV_SSID" ]; then
+        if nmcli con up id "$PREV_SSID" >/dev/null 2>&1; then
+            sleep 3
+            # Sprachunabhängig prüfen, ob wieder verbunden (active:yes/ja/si/...) und SSID stimmt)
+            if nmcli -t -f active,ssid dev wifi | awk -F: -v ssid="$PREV_SSID" '$1 ~ /^yes|ja|si|oui|sí|да|はい|是|예$/ && $2 == ssid { found=1 } END { exit !found }'; then
+                echo -e "${GREEN}✅ Wieder verbunden mit $PREV_SSID${NC} (Lastwill)"
+            else
+                echo -e "${RED}❌ Rückverbindung zu $PREV_SSID fehlgeschlagen! (Lastwill)${NC}"
+            fi
+        else
+            echo -e "${RED}❌ Konnte gespeichertes Profil für $PREV_SSID nicht aktivieren! (Lastwill)${NC}"
+        fi
+    fi
+    echo -e "${RED}⚠️  Script wurde unerwartet gestoppt! (Lastwill)${NC}"
+}
+
 main() {
     # Aktuell verbundenes WLAN merken (nur mit nmcli, sprachunabhängig)
     PREV_SSID=$(nmcli -t -f DEVICE,TYPE,STATE,CONNECTION dev | awk -F: '$3=="connected" && $2=="wifi" {print $4}')
+    # Trap für Lastwill setzen (SIGINT, SIGTERM, EXIT)
+    trap cleanup SIGINT SIGTERM EXIT
     
     mapfile -t ESP_SSIDS < <(find_esp_ssids)
     if [ ${#ESP_SSIDS[@]} -eq 0 ]; then
@@ -175,6 +199,8 @@ main() {
         fi
         echo
     done
+    # Trap für EXIT entfernen, damit cleanup nicht nochmal am regulären Ende läuft
+    trap - EXIT
     if [ $OTA_FAILED -ne 0 ]; then
         exit 1
     fi
