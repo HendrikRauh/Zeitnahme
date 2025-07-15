@@ -94,7 +94,7 @@ connect_wifi() {
 
 # Funktion: WLAN trennen
 disconnect_wifi() {
-    nmcli con down "$1" >/dev/null 2>&1 || true
+    nmcli con down id "$1" >/dev/null 2>&1 || true
 }
 
 
