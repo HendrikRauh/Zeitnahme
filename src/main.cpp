@@ -59,5 +59,12 @@ void setup()
 void loop()
 {
   // Verhindert Busy-Waiting, gibt CPU-Zeit frei, verbessert Timing für Sensoren
+  static uint32_t lastLog = 0;
+  uint32_t now = millis();
+  if (now - lastLog > 5000)
+  { // alle 5 Sekunden
+    Serial.printf("[MEM_DEBUG] Free heap: %u bytes\n", xPortGetFreeHeapSize());
+    lastLog = now;
+  }
   vTaskDelay(pdMS_TO_TICKS(1)); // 1 ms Pause, tickratenunabhängig
 }
