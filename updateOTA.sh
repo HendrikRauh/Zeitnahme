@@ -179,7 +179,7 @@ cleanup() {
     __CLEANUP_CALLED=1
     
     # Status-Übersicht anzeigen (falls ESP_SSIDS bereits gesetzt)
-    if [ ${#ESP_SSIDS[@]} -gt 0 ]; then
+    if [ "${#ESP_SSIDS[@]}" -gt 0 ]; then
         echo -e "\n${BLUE}=== OTA-Update-Prozess abgeschlossen ===${NC}"
         OTA_FAILED=0
         for ssid in "${ESP_SSIDS[@]}"; do
