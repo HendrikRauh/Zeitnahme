@@ -5,6 +5,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="/style.css" />
+        <link rel="stylesheet" href="/floating-btn.css" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     </head>
     <body>
@@ -13,16 +14,20 @@
         <div id="laufstatus-bottom"></div>
         <button
             id="settings-btn"
+            type="button"
             onclick="window.location.href='/config'"
             aria-label="Einstellungen"
-            class="floating-btn"
+            title="Einstellungen"
+            class="floating-btn left"
         >
             ⚙️
         </button>
         <button
             id="wakelock-btn"
+            type="button"
             aria-label="Wachhalten & Fullscreen"
-            class="floating-btn"
+            title="Wachhalten & Fullscreen"
+            class="floating-btn right"
         >
             ⚡
         </button>

@@ -1,0 +1,32 @@
+/* Floating Button Styles */
+.floating-btn {
+    position: fixed;
+    bottom: 5vw;
+    font-size: 2.5em;
+    background: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10;
+    color: #1976d2;
+}
+.floating-btn.left {
+    left: 5vw;
+}
+.floating-btn.right {
+    right: 5vw;
+}
+.floating-btn:active,
+.floating-btn:hover {
+    background: #eee;
+}
+.floating-btn.hide {
+    display: none !important;
+}
