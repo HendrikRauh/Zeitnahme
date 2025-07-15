@@ -194,6 +194,27 @@ function setupEventListeners() {
         // Gespeicherte Geräte neu laden
         loadDevicePreferences();
     };
+
+    // Reset ESP Button
+    const resetEspBtn = document.getElementById("resetEspBtn");
+    if (resetEspBtn) {
+        resetEspBtn.onclick = function () {
+            if (confirm("ESP wirklich neustarten?")) {
+                resetEsp();
+            }
+        };
+    }
+    // ESP Reset Funktion
+    function resetEsp() {
+        fetch("/reset_esp", { method: "POST" })
+            .then((r) => r.text())
+            .then((msg) => {
+                alert(msg || "ESP wird neugestartet.");
+            })
+            .catch(() => {
+                alert("Fehler beim Neustart des ESP.");
+            });
+    }
 }
 
 function updateStatusDisplay(status) {

@@ -34,7 +34,11 @@
                         />
                         <span>cm</span>
                     </div>
-                    <button class="sensor-button" id="saveMinDistanceBtn" disabled>
+                    <button
+                        class="sensor-button"
+                        id="saveMinDistanceBtn"
+                        disabled
+                    >
                         Speichern
                     </button>
                 </div>
@@ -54,7 +58,11 @@
                         />
                         <span>cm</span>
                     </div>
-                    <button class="sensor-button" id="saveMaxDistanceBtn" disabled>
+                    <button
+                        class="sensor-button"
+                        id="saveMaxDistanceBtn"
+                        disabled
+                    >
                         Speichern
                     </button>
                 </div>
@@ -82,6 +90,14 @@
             </div>
         </div>
         <button id="resetBtn">Alle Einstellungen löschen</button>
+        <!-- Floating Reset ESP Button -->
+        <button
+            id="resetEspBtn"
+            aria-label="ESP neu starten"
+            title="ESP neu starten"
+        >
+            ♻️
+        </button>
         <button
             id="home-btn"
             onclick="window.location.href='/'"

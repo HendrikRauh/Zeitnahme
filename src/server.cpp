@@ -257,9 +257,18 @@ if (request->hasParam("maxDistance", true)) {
 
   server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *request)
             {
+
 Serial.println("[WEB] POST /reset aufgerufen. Lösche alle Preferences.");
 resetAll();
 request->send(200, "text/plain", "Alle Einstellungen wurden gelöscht. Bitte Gerät neu konfigurieren."); });
+
+  // ESP Neustart-Endpunkt
+  server.on("/reset_esp", HTTP_POST, [](AsyncWebServerRequest *request)
+            {
+    Serial.println("[WEB] POST /reset_esp aufgerufen. Starte ESP neu.");
+    request->send(200, "text/plain", "ESP wird neugestartet...");
+    delay(500);
+    ESP.restart(); });
 
   server.on("/save_device", HTTP_POST, [](AsyncWebServerRequest *request)
             {
