@@ -1,5 +1,7 @@
 #include <task.h>
 
+TaskHandle_t masterTaskHandle = NULL;
+
 void masterTask(void *pvParameters)
 {
     unsigned long lastHeartbeat = 0;
@@ -51,7 +53,6 @@ void masterTask(void *pvParameters)
     }
 }
 
-TaskHandle_t masterTaskHandle = NULL;
 void initMasterTask()
 {
     xTaskCreatePinnedToCore(
