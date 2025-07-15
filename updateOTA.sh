@@ -6,13 +6,6 @@ set -euo pipefail
 UPDATE_TYPE=""
 
 
-# Parameter auswerten (robust gegen nicht gesetztes $1)
-arg="${1:-}"
-arg="${arg,,}"
-if [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
-    UPDATE_TYPE="$arg"
-fi
-
 
 # Farben definieren
 GREEN='\033[0;32m'
@@ -20,6 +13,28 @@ RED='\033[0;31m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# Parameter auswerten (robust gegen nicht gesetztes $1)
+arg="${1:-}"
+arg="${arg,,}"
+if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
+    echo "Usage: $0 [fw|fs]"
+    echo "  fw   Only update firmware via OTA"
+    echo "  fs   Only update filesystem via OTA"
+    echo "  (no argument) Update both firmware and filesystem"
+    exit 0
+elif [ -z "$arg" ]; then
+    UPDATE_TYPE=""
+elif [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
+    UPDATE_TYPE="$arg"
+else
+    echo -e "${RED}❌ Invalid argument: '$1'${NC}"
+    echo "Usage: $0 [fw|fs]"
+    echo "  fw   Only update firmware via OTA"
+    echo "  fs   Only update filesystem via OTA"
+    echo "  (no argument) Update both firmware and filesystem"
+    exit 1
+fi
 
 # WLAN Interface dynamisch bestimmen
 WIFI_IFACE=$(nmcli -t -f DEVICE,TYPE,STATE dev | awk -F: '$2=="wifi" && $3=="connected"{print $1; exit}')
