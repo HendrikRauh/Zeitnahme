@@ -59,5 +59,5 @@ void setup()
 void loop()
 {
   // Verhindert Busy-Waiting, gibt CPU-Zeit frei, verbessert Timing für Sensoren
-  vTaskDelay(1); // 1 Tick Pause (ca. 1ms bei 1kHz Tickrate)
+  vTaskDelay(pdMS_TO_TICKS(1)); // 1 ms Pause, tickratenunabhängig
 }
