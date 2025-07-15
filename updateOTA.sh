@@ -2,8 +2,11 @@
 set -euo pipefail
 
 
+
 # Update-Typ: fw (Firmware), fs (Filesystem), leer = beides
 UPDATE_TYPE=""
+# Anzahl Geräte, die geupdatet werden sollen (leer = alle)
+UPDATE_COUNT=""
 
 
 
@@ -14,25 +17,43 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+
 # Parameter auswerten (robust gegen nicht gesetztes $1)
 arg="${1:-}"
 arg="${arg,,}"
 if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
-    echo "Usage: $0 [fw|fs]"
-    echo "  fw   Only update firmware via OTA"
-    echo "  fs   Only update filesystem via OTA"
-    echo "  (no argument) Update both firmware and filesystem"
+    echo "Usage: $0 [N][fw|fs]"
+    echo "  fw     Only update firmware via OTA (alle Geräte)"
+    echo "  fs     Only update filesystem via OTA (alle Geräte)"
+    echo "  N      Update beide (fw+fs) für die N stärksten Geräte"
+    echo "  Nfw    Nur Firmware für die N stärksten Geräte"
+    echo "  fsN    Nur Filesystem für die N stärksten Geräte"
+    echo "  (kein Argument) Update beide für alle Geräte"
     exit 0
 elif [ -z "$arg" ]; then
     UPDATE_TYPE=""
+    UPDATE_COUNT=""
+elif [[ "$arg" =~ ^([0-9]+)(fw|fs)?$ ]]; then
+    UPDATE_COUNT="${BASH_REMATCH[1]}"
+    UPDATE_TYPE="${BASH_REMATCH[2]}"
+elif [[ "$arg" =~ ^(fw|fs)([0-9]+)$ ]]; then
+    UPDATE_TYPE="${BASH_REMATCH[1]}"
+    UPDATE_COUNT="${BASH_REMATCH[2]}"
 elif [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
     UPDATE_TYPE="$arg"
+    UPDATE_COUNT=""
+elif [[ "$arg" =~ ^[0-9]+$ ]]; then
+    UPDATE_COUNT="$arg"
+    UPDATE_TYPE=""
 else
     echo -e "${RED}❌ Invalid argument: '$1'${NC}"
-    echo "Usage: $0 [fw|fs]"
-    echo "  fw   Only update firmware via OTA"
-    echo "  fs   Only update filesystem via OTA"
-    echo "  (no argument) Update both firmware and filesystem"
+    echo "Usage: $0 [N][fw|fs]"
+    echo "  fw     Only update firmware via OTA (alle Geräte)"
+    echo "  fs     Only update filesystem via OTA (alle Geräte)"
+    echo "  N      Update beide (fw+fs) für die N stärksten Geräte"
+    echo "  Nfw    Nur Firmware für die N stärksten Geräte"
+    echo "  fsN    Nur Filesystem für die N stärksten Geräte"
+    echo "  (kein Argument) Update beide für alle Geräte"
     exit 1
 fi
 
@@ -244,24 +265,47 @@ cleanup() {
 main() {
     # Aktuell verbundenes WLAN merken (robuste Methode)
     PREV_SSID=$(get_current_ssid)
-    
+
     # Trap für Lastwill setzen (SIGINT, SIGTERM, EXIT)
     trap 'SCRIPT_INTERRUPTED=1' SIGINT SIGTERM
     trap cleanup EXIT
-    
+
+    # Info zu Einschränkungen
+    local info_msg=""
+    if [ -n "$UPDATE_COUNT" ] && [ "$UPDATE_COUNT" -gt 0 ]; then
+        info_msg+="Nur die $UPDATE_COUNT stärksten Geräte werden geupdated. "
+    fi
+    if [ -n "$UPDATE_TYPE" ]; then
+        if [ "$UPDATE_TYPE" = "fw" ]; then
+            info_msg+="Nur Firmware-Update. "
+        elif [ "$UPDATE_TYPE" = "fs" ]; then
+            info_msg+="Nur Filesystem-Update. "
+        fi
+    else
+        info_msg+="Firmware und Filesystem werden aktualisiert. "
+    fi
+    if [ -n "$info_msg" ]; then
+        echo -e "${YELLOW}ℹ️  Einschränkung: $info_msg${NC}\n"
+    fi
+
     mapfile -t ESP_SSIDS < <(find_esp_ssids)
     if [ ${#ESP_SSIDS[@]} -eq 0 ]; then
         echo -e "${RED}❌ Keine passenden ESP-WLANs gefunden!${NC}"
         exit 1
     fi
-    
+
+    # Begrenze auf gewünschte Anzahl Geräte, falls gesetzt
+    if [ -n "$UPDATE_COUNT" ] && [ "$UPDATE_COUNT" -gt 0 ]; then
+        ESP_SSIDS=("${ESP_SSIDS[@]:0:$UPDATE_COUNT}")
+    fi
+
     echo -e "\n${YELLOW}🚀 Starte OTA-Update für folgende Geräte:${NC}"
     for ssid in "${ESP_SSIDS[@]}"; do
         clean_ssid_name=$(clean_ssid "$ssid")
         echo -e "  ${BLUE}- $clean_ssid_name${NC}"
     done
     echo
-    
+
     for ssid in "${ESP_SSIDS[@]}"; do
         clean_ssid_name=$(clean_ssid "$ssid")
         echo -e "${BLUE}=== Verbinde mit >$clean_ssid_name< ===${NC}"
