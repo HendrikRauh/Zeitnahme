@@ -267,13 +267,8 @@ request->send(200, "text/plain", "Alle Einstellungen wurden gelöscht. Bitte Ger
             {
     Serial.println("[WEB] POST /reset_esp aufgerufen. Starte ESP neu.");
     request->send(200, "text/plain", "ESP wird neugestartet...");
-    TimerHandle_t restartTimer = xTimerCreate("RestartTimer", pdMS_TO_TICKS(500), pdFALSE, nullptr, [](TimerHandle_t timer) {
-        ESP.restart();
-        xTimerDelete(timer, 0);
-    });
-    if (restartTimer) {
-        xTimerStart(restartTimer, 0);
-    } });
+    delay(500);
+    ESP.restart(); });
 
   server.on("/save_device", HTTP_POST, [](AsyncWebServerRequest *request)
             {
