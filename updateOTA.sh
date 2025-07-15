@@ -73,7 +73,7 @@ get_current_ssid() {
     local ssid=""
     
     # Methode 1: Über aktive WiFi-Verbindung (robuster)
-    ssid=$(nmcli -t -f active,ssid dev wifi | awk -F: '$1 ~ /^yes|ja|si|oui|sí|да|はい|是|예$/ {print $2}' | head -1)
+    ssid=$(nmcli -t -f active,ssid dev wifi | awk -F: '$1 ~ /^(yes|ja|si|oui|sí|да|はい|是|예)$/ {print $2}' | head -1)
     
     # Methode 2: Über Geräte-Status (Fallback)
     if [ -z "$ssid" ]; then
@@ -209,7 +209,7 @@ cleanup() {
         # Erst versuchen, über gespeichertes Profil zu verbinden
         if nmcli con up id "$PREV_SSID" >/dev/null 2>&1; then
             sleep 3
-            if nmcli -t -f active,ssid dev wifi | awk -F: -v ssid="$PREV_SSID" '$1 ~ /^yes|ja|si|oui|sí|да|はい|是|예$/ && $2 == ssid { found=1 } END { exit !found }'; then
+            if nmcli -t -f active,ssid dev wifi | awk -F: -v ssid="$PREV_SSID" '$1 ~ /^(yes|ja|si|oui|sí|да|はい|是|예)$/ && $2 == ssid { found=1 } END { exit !found }'; then
                 echo -e "${GREEN}✅ Wieder verbunden mit $PREV_SSID${NC}"
             else
                 echo -e "${RED}❌ Rückverbindung zu $PREV_SSID fehlgeschlagen!${NC}"
@@ -219,7 +219,7 @@ cleanup() {
             echo -e "${YELLOW}⚠️  Gespeichertes Profil nicht verfügbar, versuche direkte Verbindung...${NC}"
             if nmcli dev wifi connect "$PREV_SSID" ifname "$WIFI_IFACE" >/dev/null 2>&1; then
                 sleep 3
-                if nmcli -t -f active,ssid dev wifi | awk -F: -v ssid="$PREV_SSID" '$1 ~ /^yes|ja|si|oui|sí|да|はい|是|예$/ && $2 == ssid { found=1 } END { exit !found }'; then
+                if nmcli -t -f active,ssid dev wifi | awk -F: -v ssid="$PREV_SSID" '$1 ~ /^(yes|ja|si|oui|sí|да|はい|是|예)$/ && $2 == ssid { found=1 } END { exit !found }'; then
                     echo -e "${GREEN}✅ Wieder verbunden mit $PREV_SSID${NC}"
                 else
                     echo -e "${RED}❌ Rückverbindung zu $PREV_SSID fehlgeschlagen!${NC}"
