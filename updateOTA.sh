@@ -46,7 +46,7 @@ WIFI_PASS=""
 
 # Funktion: ESP-SSIDs finden
 find_esp_ssids() {
-    nmcli -t -f SSID dev wifi list | awk 'NF' | grep -F "⏱️" | while read -r ssid; do
+    nmcli -t -f SSID dev wifi list | awk 'NF' | grep -F "⏱️" | while IFS= read -r ssid; do
         clean_ssid "$ssid"
     done
 }
