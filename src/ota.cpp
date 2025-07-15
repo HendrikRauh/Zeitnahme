@@ -24,12 +24,12 @@ void setupOTA()
         } });
     ArduinoOTA.onEnd([]()
                      {
-        delay(500);
+        vTaskDelay(pdMS_TO_TICKS(500));
         ESP.restart(); });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { /* no log output */ });
     ArduinoOTA.onError([](ota_error_t error)
                        {
-        delay(500);
+        vTaskDelay(pdMS_TO_TICKS(500));
         ESP.restart(); });
     ArduinoOTA.begin();
 
