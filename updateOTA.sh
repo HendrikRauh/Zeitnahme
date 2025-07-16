@@ -34,7 +34,7 @@ retry_ota_update() {
         sleep 3
         if ip addr show "$WIFI_IFACE" | grep -q '192\.168\.4\.'; then
             ESP_IP="192.168.4.1"
-            run_ota_update "$ESP_IP" "$clean_ssid_name"
+            run_ota_update "$ESP_IP" "$clean_ssid_name" "$type"
             if [ "$type" = "fw" ] && [ "${STATUS_FW[$ssid_hash]}" = "🟢" ]; then success=1; break; fi
             if [ "$type" = "fs" ] && [ "${STATUS_FS[$ssid_hash]}" = "🟢" ]; then success=1; break; fi
         else
@@ -67,13 +67,25 @@ retry_ota_update() {
 run_ota_update() {
     local ip="$1"
     local ssid="$2"
+    local type="${3:-}"
     local fw_status=0
     local fs_status=0
     local clean_ssid_name=$(clean_ssid "$ssid")
     local ssid_hash=$(echo -n "$clean_ssid_name" | md5sum | awk '{print $1}')
     local start_fw end_fw start_fs end_fs
-    if [ -z "${UPDATE_TYPE:-}" ] || [ "$UPDATE_TYPE" = "fw" ]; then
+    local do_fw=0
+    local do_fs=0
+    if [ -n "$type" ]; then
+        if [ "$type" = "fw" ]; then do_fw=1; fi
+        if [ "$type" = "fs" ]; then do_fs=1; fi
+    else
+        if [ -z "${UPDATE_TYPE:-}" ] || [ "$UPDATE_TYPE" = "fw" ]; then do_fw=1; fi
+        if [ -z "${UPDATE_TYPE:-}" ] || [ "$UPDATE_TYPE" = "fs" ]; then do_fs=1; fi
+    fi
+    if [ $do_fw -eq 1 ]; then
         echo -e "${YELLOW}⚙️  OTA Firmware-Update für $clean_ssid_name...${NC}"
+        connect_wifi "$clean_ssid_name"
+        sleep 3
         start_fw=$(date +%s.%N)
         set +e
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target upload --upload-port "$ip"
@@ -82,9 +94,13 @@ run_ota_update() {
         end_fw=$(date +%s.%N)
         STATUS_FW["$ssid_hash"]=$([ $fw_status -eq 0 ] && echo "🟢" || echo "🔴")
         DURATION_FW["$ssid_hash"]=$(awk "BEGIN {print sprintf(\"%.2f\", $end_fw - $start_fw)}")
+        disconnect_wifi "$clean_ssid_name"
+        sleep 2
     fi
-    if [ -z "${UPDATE_TYPE:-}" ] || [ "$UPDATE_TYPE" = "fs" ]; then
+    if [ $do_fs -eq 1 ]; then
         echo -e "${YELLOW}⚙️  OTA Filesystem-Update für $clean_ssid_name...${NC}"
+        connect_wifi "$clean_ssid_name"
+        sleep 3
         start_fs=$(date +%s.%N)
         set +e
         PLATFORMIO_UPLOAD_PROTOCOL=espota platformio run --target uploadfs --upload-port "$ip"
@@ -93,10 +109,14 @@ run_ota_update() {
         end_fs=$(date +%s.%N)
         STATUS_FS["$ssid_hash"]=$([ $fs_status -eq 0 ] && echo "🟢" || echo "🔴")
         DURATION_FS["$ssid_hash"]=$(awk "BEGIN {print sprintf(\"%.2f\", $end_fs - $start_fs)}")
+        disconnect_wifi "$clean_ssid_name"
+        sleep 2
     fi
-    if { [ "${UPDATE_TYPE:-}" = "fw" ] && [ $fw_status -eq 0 ]; } || \
-       { [ "${UPDATE_TYPE:-}" = "fs" ] && [ $fs_status -eq 0 ]; } || \
-       { [ -z "${UPDATE_TYPE:-}" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; }
+    if { [ "$type" = "fw" ] && [ $fw_status -eq 0 ]; } || \
+       { [ "$type" = "fs" ] && [ $fs_status -eq 0 ]; } || \
+       { [ -z "$type" ] && [ -z "${UPDATE_TYPE:-}" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; } || \
+       { [ -z "$type" ] && [ "${UPDATE_TYPE:-}" = "fw" ] && [ $fw_status -eq 0 ]; } || \
+       { [ -z "$type" ] && [ "${UPDATE_TYPE:-}" = "fs" ] && [ $fs_status -eq 0 ]; }
     then
         echo -e "${GREEN}✅ OTA-Update für $clean_ssid_name erfolgreich!${NC}"
     else
