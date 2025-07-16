@@ -340,9 +340,6 @@ elif [[ "$arg" =~ ^(fw|fs)([0-9]+)$ ]]; then
 elif [ "$arg" = "fw" ] || [ "$arg" = "fs" ]; then
     UPDATE_TYPE="$arg"
     UPDATE_COUNT=""
-elif [[ "$arg" =~ ^[0-9]+$ ]]; then
-    UPDATE_COUNT="$arg"
-    UPDATE_TYPE=""
 else
     echo -e "${RED}❌ Invalid argument: '$1'${NC}"
     echo "Usage: $0 [N][fw|fs]"
