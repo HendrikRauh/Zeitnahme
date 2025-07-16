@@ -5,7 +5,6 @@ let selfRole = "";
 let savedDevices = [];
 let discoveredDevices = [];
 let wsManager;
-let ws;
 
 // Initialisierung
 document.addEventListener("DOMContentLoaded", function () {
@@ -57,7 +56,6 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("WebSocket error:", error);
         }
     );
-    ws = wsManager;
 
     // Geräteinformationen laden
     loadDeviceInfo();
