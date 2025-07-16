@@ -112,12 +112,7 @@ run_ota_update() {
         disconnect_wifi "$clean_ssid_name"
         sleep 2
     fi
-    if { [ "$type" = "fw" ] && [ $fw_status -eq 0 ]; } || \
-       { [ "$type" = "fs" ] && [ $fs_status -eq 0 ]; } || \
-       { [ -z "$type" ] && [ -z "${UPDATE_TYPE:-}" ] && [ $fw_status -eq 0 ] && [ $fs_status -eq 0 ]; } || \
-       { [ -z "$type" ] && [ "${UPDATE_TYPE:-}" = "fw" ] && [ $fw_status -eq 0 ]; } || \
-       { [ -z "$type" ] && [ "${UPDATE_TYPE:-}" = "fs" ] && [ $fs_status -eq 0 ]; }
-    then
+    if { [ $do_fw -eq 1 ] && [ $fw_status -eq 0 ]; } || { [ $do_fs -eq 1 ] && [ $fs_status -eq 0 ]; }; then
         echo -e "${GREEN}✅ OTA-Update für $clean_ssid_name erfolgreich!${NC}"
     else
         echo -e "${RED}❌ OTA-Update für $clean_ssid_name fehlgeschlagen!${NC}"
