@@ -315,6 +315,11 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.js.gz", "application/javascript");
     response->addHeader("Content-Encoding", "gzip");
     request->send(response); });
+  server.on("/wsManager.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/wsManager.js.gz", "application/javascript");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response); });
   server.on("/.hash", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/.hash", "text/plain");
