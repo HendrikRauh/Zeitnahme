@@ -12,6 +12,10 @@ class WSManager {
         this.reconnectDelay = 2000;
         this.maxReconnectDelay = 30000;
         this.reconnectAttempts = 0;
+        this.isUnloading = false;
+        window.addEventListener("beforeunload", () => {
+            this.isUnloading = true;
+        });
         this.connect();
     }
 
@@ -26,11 +30,13 @@ class WSManager {
             if (this.onMessage) this.onMessage(event);
         };
         this.ws.onclose = (event) => {
-            this.showError(
-                "Verbindung zum Server verloren. Versuche erneut..."
-            );
+            if (!this.isUnloading) {
+                this.showError(
+                    "Verbindung zum Server verloren. Versuche erneut..."
+                );
+                this.scheduleReconnect();
+            }
             if (this.onClose) this.onClose(event);
-            this.scheduleReconnect();
         };
         this.ws.onerror = (event) => {
             this.showError("WebSocket Fehler. Versuche erneut...");
