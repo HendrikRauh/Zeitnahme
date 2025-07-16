@@ -54,7 +54,7 @@ class WSManager {
     scheduleReconnect() {
         this.reconnectAttempts++;
         let delay = Math.min(
-            this.reconnectDelay * this.reconnectAttempts,
+            this.reconnectDelay * 2 ** this.reconnectAttempts,
             this.maxReconnectDelay
         );
         setTimeout(() => {
