@@ -52,7 +52,7 @@ class WSManager {
     }
 
     scheduleReconnect() {
-        this.reconnectAttempts++;
+        this.reconnectAttempts = Math.min(this.reconnectAttempts + 1, 5); // Cap at 5 attempts
         let delay = Math.min(
             this.reconnectDelay * 2 ** this.reconnectAttempts,
             this.maxReconnectDelay
