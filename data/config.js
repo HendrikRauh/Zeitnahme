@@ -1,11 +1,10 @@
+import WSManager from "./wsManager.js";
 // Globale Variablen
 let selfMac = "";
 let selfRole = "";
 let savedDevices = [];
 let discoveredDevices = [];
-
-// WebSocket Connection
-let ws = new WebSocket("ws://" + location.host + "/ws");
+let wsManager;
 
 // Initialisierung
 document.addEventListener("DOMContentLoaded", function () {
@@ -25,15 +24,45 @@ document.addEventListener("DOMContentLoaded", function () {
     if (minBtn) minBtn.disabled = true;
     if (maxBtn) maxBtn.disabled = true;
 
+    // WebSocket zentral initialisieren
+    wsManager = new WSManager(
+        "ws://" + location.host + "/ws",
+        function (event) {
+            let msg = {};
+            try {
+                msg = JSON.parse(event.data);
+            } catch (e) {
+                return;
+            }
+            if (msg.type === "saved_devices") {
+                savedDevices = msg.data;
+                showAllDevices();
+            } else if (msg.type === "discovered_devices") {
+                discoveredDevices = msg.data;
+                showAllDevices();
+            } else if (msg.type === "status") {
+                updateStatusDisplay(msg.status);
+            } else if (msg.type === "device_role_changed") {
+                handleDeviceRoleChanged(msg.data);
+            }
+        },
+        function () {
+            console.log("WebSocket connected");
+        },
+        function () {
+            console.log("WebSocket disconnected");
+        },
+        function (error) {
+            console.error("WebSocket error:", error);
+        }
+    );
+
     // Geräteinformationen laden
     loadDeviceInfo();
-
     // Event Listeners
     setupEventListeners();
-
     // Geräte automatisch suchen
     discoverDevices();
-
     // Version-Anzeige
     showVersion();
 });
@@ -118,41 +147,6 @@ function loadDevicePreferences() {
 }
 
 function setupEventListeners() {
-    // WebSocket Events
-    ws.onmessage = function (event) {
-        let msg = {};
-        try {
-            msg = JSON.parse(event.data);
-        } catch (e) {
-            return;
-        }
-
-        if (msg.type === "saved_devices") {
-            savedDevices = msg.data;
-            showAllDevices();
-        } else if (msg.type === "discovered_devices") {
-            discoveredDevices = msg.data;
-            showAllDevices();
-        } else if (msg.type === "status") {
-            updateStatusDisplay(msg.status);
-        } else if (msg.type === "device_role_changed") {
-            // Handle real-time device role changes
-            handleDeviceRoleChanged(msg.data);
-        }
-    };
-
-    ws.onopen = function () {
-        console.log("WebSocket connected");
-    };
-
-    ws.onclose = function () {
-        console.log("WebSocket disconnected");
-    };
-
-    ws.onerror = function (error) {
-        console.error("WebSocket error:", error);
-    };
-
     // Min Distance Input and Button
     const minDistanceInput = document.getElementById("minDistanceInput");
     minDistanceInput.addEventListener("input", updateMinDistanceButton);

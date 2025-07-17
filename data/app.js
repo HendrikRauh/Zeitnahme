@@ -1,3 +1,5 @@
+import WSManager from "./wsManager.js";
+
 const INACTIVITY_DELAY = 10000; // ms
 const DEBOUNCE_DELAY = 100; // ms
 
@@ -96,33 +98,31 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    let ws = new WebSocket("ws://" + location.host + "/ws");
-    // WebSocket-Handler erweitern
-    ws.onmessage = function (event) {
-        try {
-            let msg = JSON.parse(event.data);
-            if (msg.type === "lastTime") {
-                zeitElement.textContent = formatDuration(Number(msg.value));
+    let wsManager = new WSManager(
+        "ws://" + location.host + "/ws",
+        function (event) {
+            try {
+                let msg = JSON.parse(event.data);
+                if (msg.type === "lastTime") {
+                    zeitElement.textContent = formatDuration(Number(msg.value));
+                }
+                if (msg.type === "laufCount") {
+                    updateLaufstatus(Number(msg.value));
+                }
+            } catch (e) {
+                console.error("WebSocket message error:", e);
             }
-            if (msg.type === "laufCount") {
-                updateLaufstatus(Number(msg.value));
-            }
-        } catch (e) {
-            console.error("WebSocket message error:", e);
+        },
+        function () {
+            console.log("WebSocket connected");
+        },
+        function () {
+            console.log("WebSocket disconnected");
+        },
+        function (error) {
+            console.error("WebSocket error:", error);
         }
-    };
-
-    ws.onopen = function () {
-        console.log("WebSocket connected");
-    };
-
-    ws.onclose = function () {
-        console.log("WebSocket disconnected");
-    };
-
-    ws.onerror = function (error) {
-        console.error("WebSocket error:", error);
-    };
+    );
 
     // Initialen Laufstatus laden
     fetch("/api/lauf_count")
@@ -139,7 +139,6 @@ async function requestWakeLock() {
     startDummyVideo();
     console.log("Dummy-Video-WakeLock aktiviert");
 }
-
 
 async function releaseWakeLock() {
     // Dummy-Video stoppen
