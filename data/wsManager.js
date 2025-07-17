@@ -48,6 +48,9 @@ class WSManager {
     send(data) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(data);
+            return true;
+        } else {
+            return false;
         }
     }
 
