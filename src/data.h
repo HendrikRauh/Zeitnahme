@@ -3,9 +3,14 @@
 
 #include "Preferences.h"
 #include <Utility.h>
-#include <data.h>
 #include <deviceInfo.h>
 #include <ArduinoJson.h>
+#include <Arduino.h>
+#include <vector>
+#include <algorithm>
+#include <role.h>
+#include <espnow.h>
+#include <deque>
 
 Role getOwnRole();
 
@@ -16,14 +21,6 @@ void loadDeviceListFromPreferences();
 void writeDeviceListToPreferences();
 
 void resetAll();
-
-#include <Arduino.h>
-#include <vector>
-#include <algorithm>
-#include <role.h>
-#include <Utility.h>
-#include <espnow.h>
-#include <deque>
 
 // Forward declarations
 void broadcastMasterStatus();
