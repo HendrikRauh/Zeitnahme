@@ -23,13 +23,13 @@ void setup()
   initDeviceInfo();
   initWebpage();
   initEspNow();
+  initWebsocket();
+  loadDeviceListFromPreferences();
   // TODO: Nur das verwenden was auch gebraucht wird (Anzeige oder Sensor + Tasks)
   initSensor();
-  initMatrix();
-
-  loadDeviceListFromPreferences();
-  initWebsocket();
   initLichtschrankeTask();
+  // ----
+  initMatrix();
 
   // Gestaffelte Initialisierung basierend auf MAC-Adresse (reduziert für bessere Performance)
   // Geräte mit niedrigerer MAC warten weniger

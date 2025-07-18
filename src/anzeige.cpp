@@ -54,3 +54,17 @@ void matrixShowString(const char *text)
             mx.setColumn(col++, 0x00);
     }
 }
+
+void matrixShowTime(unsigned long time)
+{ // Wenn unter 1 minute einfach als string formatieren und anzeigen (ss,mms)
+    if (time < 60000)
+    {
+        char buffer[10];
+        sprintf(buffer, "%02lu,%03lu", time / 1000, time % 1000);
+        matrixShowString(buffer);
+    }
+    else
+    {
+        // TODO: Wenn über 1 minute -> zu wenig platz
+    }
+}

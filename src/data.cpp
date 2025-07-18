@@ -2,6 +2,7 @@
 #include <Sensor.h>
 #include <server.h>
 #include <deque>
+#include <anzeige.h>
 
 Role currentRole;
 MasterStatus masterStatus = MASTER_UNKNOWN;
@@ -992,6 +993,7 @@ void updateWebSocketClients()
         if (it->isFinished)
         {
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(it->duration) + "}");
+            matrixShowTime(it->duration);
             break;
         }
     }

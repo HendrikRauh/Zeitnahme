@@ -19,5 +19,6 @@ void matrixSetBrigtness(uint8_t brightness);
 void initMatrix();
 void matrixWipeAnimation();
 void matrixShowString(const char *text);
+void matrixShowTime(unsigned long time);
 
 #endif // ANZEIGE_H

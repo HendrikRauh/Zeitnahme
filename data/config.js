@@ -513,7 +513,11 @@ function createDeviceItem(container, dev, isSelf) {
         statusText = "Unbekannt";
     }
 
-    let roleOptions = (isSelf ? ["Start", "Ziel"] : ["-", "Start", "Ziel"])
+    let roleOptions = (
+        isSelf
+            ? ["Start", "Ziel", "Anzeige"]
+            : ["-", "Start", "Ziel", "Anzeige"]
+    )
         .map(
             (opt) =>
                 `<option value="${opt}"${
@@ -672,19 +676,4 @@ function handleDeviceRoleChanged(data) {
 
     // Refresh the UI to show the updated role
     showAllDevices();
-}
-
-function getRoleDisplayName(role) {
-    switch (role) {
-        case 0:
-            return "Keine Rolle";
-        case 1:
-            return "Master";
-        case 2:
-            return "Start";
-        case 3:
-            return "Ziel";
-        default:
-            return "Unbekannt";
-    }
 }

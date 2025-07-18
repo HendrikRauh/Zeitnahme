@@ -11,6 +11,8 @@ String roleToString(Role role)
         return "Ziel";
     case ROLE_IGNORE:
         return "Ignorieren";
+    case ROLE_DISPLAY:
+        return "Anzeige";
     default:
         return "unknown";
     }
@@ -37,6 +39,8 @@ Role stringToRole(const String &text)
         return ROLE_START;
     if (text == "Ziel")
         return ROLE_ZIEL;
+    if (text == "Anzeige")
+        return ROLE_DISPLAY;
     return ROLE_IGNORE;
 }
 
