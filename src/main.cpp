@@ -12,6 +12,7 @@
 #include <masterTask.h>
 #include <Sensor.h>
 #include <server.h>
+#include <anzeige.h>
 
 char macStr[18] = {0};
 
@@ -22,7 +23,10 @@ void setup()
   initDeviceInfo();
   initWebpage();
   initEspNow();
+  // TODO: Nur das verwenden was auch gebraucht wird (Anzeige oder Sensor + Tasks)
   initSensor();
+  initMatrix();
+
   loadDeviceListFromPreferences();
   initWebsocket();
   initLichtschrankeTask();
