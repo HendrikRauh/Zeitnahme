@@ -56,15 +56,33 @@ void matrixShowString(const char *text)
 }
 
 void matrixShowTime(unsigned long time)
-{ // Wenn unter 1 minute einfach als string formatieren und anzeigen (ss,mms)
+{
     if (time < 60000)
     {
         char buffer[10];
         sprintf(buffer, "%02lu,%03lu", time / 1000, time % 1000);
         matrixShowString(buffer);
     }
+    else if (time < 60000 * 2)
+    {
+        unsigned long minutes = time / 60000;
+        unsigned long seconds = (time % 60000) / 1000;
+        unsigned long hundredths = (time % 1000) / 10;
+        char buffer[10];
+        sprintf(buffer, "%lu'%02lu,%02lu", minutes, seconds, hundredths);
+        matrixShowString(buffer);
+    }
+    else if (time < 60000 * 10)
+    {
+        unsigned long minutes = time / 60000;
+        unsigned long seconds = (time % 60000) / 1000;
+        unsigned long hundredths = (time % 1000) / 10;
+        char buffer[10];
+        sprintf(buffer, "%lu:%02lu.%01lu", minutes, seconds, hundredths);
+        matrixShowString(buffer);
+    }
     else
     {
-        // TODO: Wenn über 1 minute -> zu wenig platz
+        matrixShowString("ERROR");
     }
 }
