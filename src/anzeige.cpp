@@ -76,9 +76,9 @@ void matrixShowTime(unsigned long time)
     {
         unsigned long minutes = time / 60000;
         unsigned long seconds = (time % 60000) / 1000;
-        unsigned long hundredths = (time % 1000) / 10;
+        unsigned long tenths = (time % 1000) / 100;
         char buffer[10];
-        sprintf(buffer, "%lu:%02lu.%01lu", minutes, seconds, hundredths);
+        sprintf(buffer, "%lu:%02lu.%01lu", minutes, seconds, tenths);
         matrixShowString(buffer);
     }
     else
