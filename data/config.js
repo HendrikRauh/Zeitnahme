@@ -6,6 +6,8 @@ let savedDevices = [];
 let discoveredDevices = [];
 let wsManager;
 
+window.saveDeviceRole = saveDeviceRole;
+
 // Initialisierung
 document.addEventListener("DOMContentLoaded", function () {
     // Felder und Buttons initial leeren und deaktivieren
