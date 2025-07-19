@@ -11,7 +11,7 @@
 #define CLK_PIN 26
 
 #define MAX_DEVICES 4
-#define BRIGHTNESS 1
+#define BRIGHTNESS 15
 
 extern MD_MAX72XX mx;
 

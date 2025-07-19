@@ -83,6 +83,6 @@ void matrixShowTime(unsigned long time)
     }
     else
     {
-        matrixShowString("ERROR");
+        matrixShowString("> 10 min");
     }
 }
