@@ -38,7 +38,6 @@ void matrixWipeAnimation()
 
 void matrixShowString(const char *text)
 {
-    mx.clear();
     uint8_t col = 0;
     for (uint8_t i = 0; text[i] != '\0'; i++)
     {
@@ -51,7 +50,13 @@ void matrixShowString(const char *text)
         }
         // 1 Spalte Abstand zwischen Zeichen
         if (col < mx.getColumnCount())
+        {
             mx.setColumn(col++, 0x00);
+        }
+    }
+    while (col < mx.getColumnCount())
+    {
+        mx.setColumn(col++, 0x00);
     }
 }
 
