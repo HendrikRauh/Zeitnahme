@@ -145,10 +145,10 @@ void clearRemainingColumns(uint8_t startCol)
 void displaySecondsAndMilliseconds(unsigned long time, uint8_t &col)
 {
     unsigned long seconds = time / 1000;
-    unsigned long millis = time % 1000;
+    unsigned long milliseconds = time % 1000;
 
     char timeStr[TIME_STRING_BUFFER_SIZE];
-    sprintf(timeStr, "%02lu.%03lu", seconds, millis);
+    sprintf(timeStr, "%02lu.%03lu", seconds, milliseconds);
 
     for (uint8_t i = 0; timeStr[i] != '\0'; i++)
     {
