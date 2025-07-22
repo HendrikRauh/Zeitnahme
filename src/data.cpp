@@ -1,8 +1,4 @@
-#include <data.h>
-#include <Sensor.h>
-#include <server.h>
-#include <deque>
-#include <anzeige.h>
+#include "data.h"
 
 Role currentRole;
 MasterStatus masterStatus = MASTER_UNKNOWN;

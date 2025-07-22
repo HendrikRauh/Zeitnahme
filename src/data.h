@@ -1,16 +1,20 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include "Preferences.h"
-#include <Utility.h>
-#include <deviceInfo.h>
-#include <ArduinoJson.h>
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include <Preferences.h>
 #include <vector>
 #include <algorithm>
-#include <role.h>
-#include <espnow.h>
 #include <deque>
+
+#include "Utility.h"
+#include "deviceInfo.h"
+#include "role.h"
+#include "espnow.h"
+#include "Sensor.h"
+#include "server.h"
+#include "anzeige.h"
 
 Role getOwnRole();
 
