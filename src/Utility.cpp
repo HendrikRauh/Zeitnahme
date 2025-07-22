@@ -142,6 +142,26 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
             }
         }
     }
+    else
+    {
+        // Prüfe, ob wir kürzlich eine Rollenänderungsanfrage an dieses Gerät gesendet haben
+        // Falls ja, füge es jetzt zu unserer gespeicherten Liste hinzu
+        if (checkIfDeviceIsDiscoveredList(senderMac) && senderRole != ROLE_IGNORE)
+        {
+            Serial.printf("[ROLE_DEBUG] Gerät %s nicht in gespeicherter Liste, aber in entdeckter Liste gefunden. Füge zur gespeicherten Liste hinzu.\n", macToString(senderMac).c_str());
+            changeSavedDevice(senderMac, senderRole);
+            roleChanged = true;
+            // WebSocket-Update für Rollenbestätigung senden
+            JsonDocument doc;
+            doc["type"] = "device_role_changed";
+            JsonObject data = doc["data"].to<JsonObject>();
+            data["mac"] = macToShortString(senderMac);
+            data["role"] = roleToString(senderRole);
+            String json;
+            serializeJson(doc, json);
+            wsBrodcastMessage(json);
+        }
+    }
     // Aktualisiere entdeckte Geräte Liste
     if (!checkIfDeviceIsDiscoveredList(senderMac))
     {
