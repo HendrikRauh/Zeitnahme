@@ -11,14 +11,25 @@
 #define CLK_PIN 26
 
 #define MAX_DEVICES 4
-#define BRIGHTNESS 15
+#define BRIGHTNESS 1
 
 extern MD_MAX72XX mx;
 
-void matrixSetBrigtness(uint8_t brightness);
+uint8_t matrixGetChar(char c, uint8_t bufSize, uint8_t *buffer);
+uint8_t matrixGetCharWithWidth(char c, uint8_t preferredWidth, uint8_t bufSize, uint8_t *buffer);
+
+void matrixSetBrightness(uint8_t brightness);
 void initMatrix();
 void matrixWipeAnimation();
+
 void matrixShowString(const char *text);
 void matrixShowTime(unsigned long time);
 
-#endif // ANZEIGE_H
+void writeCharToMatrix(char c, uint8_t preferredWidth, uint8_t &col, bool addSpace = true);
+void writeStringToMatrix(const char *str, uint8_t preferredWidth, uint8_t &col, bool addSpaceBetweenChars = true);
+void clearRemainingColumns(uint8_t startCol);
+void displaySecondsAndMilliseconds(unsigned long time, uint8_t &col);
+void displayMinutesSecondsHundredths(unsigned long time, uint8_t &col);
+void displayMinutesSecondsTenths(unsigned long time, uint8_t &col);
+
+#endif

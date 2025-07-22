@@ -64,4 +64,5 @@ void loop()
 {
   // Verhindert Busy-Waiting, gibt CPU-Zeit frei, verbessert Timing für Sensoren
   vTaskDelay(pdMS_TO_TICKS(1)); // 1 ms Pause, tickratenunabhängig
+  matrixShowTime(millis());
 }
