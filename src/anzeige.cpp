@@ -94,9 +94,11 @@ const CustomChar customChars[] = {
     {':', 1, {0b00100100}},
 };
 
+const unsigned int CUSTOM_CHARS_COUNT = sizeof(customChars) / sizeof(CustomChar);
+
 uint8_t matrixGetChar(char c, uint8_t bufSize, uint8_t *buffer)
 {
-    for (unsigned int i = 0; i < sizeof(customChars) / sizeof(CustomChar); i++)
+    for (unsigned int i = 0; i < CUSTOM_CHARS_COUNT; i++)
     {
         if (customChars[i].ch == c)
         {
@@ -219,7 +221,7 @@ void displayMinutesSecondsTenths(unsigned long time, uint8_t &col)
 
 uint8_t matrixGetCharWithWidth(char c, uint8_t preferredWidth, uint8_t bufSize, uint8_t *buffer)
 {
-    for (unsigned int i = 0; i < sizeof(customChars) / sizeof(CustomChar); i++)
+    for (unsigned int i = 0; i < CUSTOM_CHARS_COUNT; i++)
     {
         if (customChars[i].ch == c && customChars[i].width == preferredWidth)
         {
@@ -232,7 +234,7 @@ uint8_t matrixGetCharWithWidth(char c, uint8_t preferredWidth, uint8_t bufSize, 
         }
     }
 
-    for (unsigned int i = 0; i < sizeof(customChars) / sizeof(CustomChar); i++)
+    for (unsigned int i = 0; i < CUSTOM_CHARS_COUNT; i++)
     {
         if (customChars[i].ch == c)
         {
