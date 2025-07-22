@@ -108,4 +108,8 @@ void slaveHandleRaceFinish(unsigned long finishTime, const uint8_t *finishDevice
 // WebSocket-Updates
 void updateWebSocketClients();
 
+// Brightness functions for display devices
+int getBrightness();
+void setBrightness(int brightness);
+
 #endif

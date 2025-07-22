@@ -1,5 +1,8 @@
 #include <anzeige.h>
 
+// Forward declaration for getBrightness from data.h
+int getBrightness();
+
 MD_MAX72XX mx = MD_MAX72XX(MD_MAX72XX::DR1CR0RR1_HW, DIN_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
 struct CustomChar
@@ -257,7 +260,9 @@ void initMatrix()
     mx.begin();
     matrixSetBrightness(MAX_BRIGHTNESS);
     matrixWipeAnimation();
-    matrixSetBrightness(BRIGHTNESS);
+    // Use saved brightness setting instead of hardcoded BRIGHTNESS
+    int savedBrightness = getBrightness();
+    matrixSetBrightness(savedBrightness);
     mx.clear();
     matrixShowString("MSC BK");
 }

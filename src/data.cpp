@@ -335,6 +335,42 @@ void setMaxDistance(int maxDistance)
     updateDistanceCache();
 }
 
+// Brightness Settings Funktionen
+#ifndef DEFAULT_BRIGHTNESS
+#define DEFAULT_BRIGHTNESS 1
+#endif
+
+int getBrightness()
+{
+    preferences.begin("lichtschranke", true);
+    int brightness = preferences.getInt("brightness", DEFAULT_BRIGHTNESS);
+    preferences.end();
+
+    Serial.printf("[BRIGHTNESS_DEBUG] Helligkeit geladen: %d\n", brightness);
+    return brightness;
+}
+
+void setBrightness(int brightness)
+{
+    if (brightness < 1 || brightness > 15)
+    {
+        Serial.printf("[BRIGHTNESS_DEBUG] Ungültiger Helligkeit-Wert: %d. Verwende Default (%d).\n", brightness, DEFAULT_BRIGHTNESS);
+        brightness = DEFAULT_BRIGHTNESS;
+    }
+
+    preferences.begin("lichtschranke", false);
+    preferences.putInt("brightness", brightness);
+    preferences.end();
+
+    Serial.printf("[BRIGHTNESS_DEBUG] Helligkeit gesetzt auf: %d\n", brightness);
+
+    // Matrix-Helligkeit sofort aktualisieren wenn es ein Display-Gerät ist
+    if (getOwnRole() == ROLE_DISPLAY)
+    {
+        matrixSetBrightness(brightness);
+    }
+}
+
 void addRaceStart(unsigned long startTime)
 {
     if (isMaster())
