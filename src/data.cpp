@@ -361,8 +361,14 @@ void setBrightness(int brightness)
     Serial.printf("[BRIGHTNESS_DEBUG] Helligkeit gesetzt auf: %d\n", brightness);
 
     // Matrix-Helligkeit sofort aktualisieren wenn es ein Display-Gerät ist
-    if (getOwnRole() == ROLE_DISPLAY)
+    // Verwende cached role für bessere Performance
+    if (roleLoaded && cachedOwnRole == ROLE_DISPLAY)
     {
+        matrixSetBrightness(brightness);
+    }
+    else if (!roleLoaded && getOwnRole() == ROLE_DISPLAY)
+    {
+        // Fallback für den unwahrscheinlichen Fall, dass der Cache noch nicht geladen ist
         matrixSetBrightness(brightness);
     }
 }
@@ -1025,8 +1031,14 @@ void updateWebSocketClients()
         if (it->isFinished)
         {
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(it->duration) + "}");
-            if (getOwnRole() == ROLE_DISPLAY)
+            // Verwende cached role für bessere Performance in häufig aufgerufener Funktion
+            if (roleLoaded && cachedOwnRole == ROLE_DISPLAY)
             {
+                matrixShowTime(it->duration);
+            }
+            else if (!roleLoaded && getOwnRole() == ROLE_DISPLAY)
+            {
+                // Fallback für den unwahrscheinlichen Fall, dass der Cache noch nicht geladen ist
                 matrixShowTime(it->duration);
             }
             break;

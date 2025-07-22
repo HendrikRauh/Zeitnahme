@@ -1,9 +1,7 @@
 #include <anzeige.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
-// Forward declaration for getBrightness from data.h
-int getBrightness();
+#include <data.h>
 
 MD_MAX72XX mx = MD_MAX72XX(MD_MAX72XX::DR1CR0RR1_HW, DIN_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
