@@ -1,4 +1,6 @@
 #include <anzeige.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 // Forward declaration for getBrightness from data.h
 int getBrightness();
@@ -272,14 +274,14 @@ void matrixWipeAnimation()
     for (uint8_t col = 0; col < mx.getColumnCount(); col++)
     {
         mx.setColumn(col, 0xFF);
-        delay(WIPE_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(WIPE_DELAY));
     }
     for (uint8_t col = 0; col < mx.getColumnCount(); col++)
     {
         mx.setColumn(col, 0x00);
-        delay(WIPE_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(WIPE_DELAY));
     }
-    delay(END_DELAY);
+    vTaskDelay(pdMS_TO_TICKS(END_DELAY));
 }
 
 void matrixShowString(const char *text)
