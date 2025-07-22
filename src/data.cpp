@@ -1025,7 +1025,10 @@ void updateWebSocketClients()
         if (it->isFinished)
         {
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(it->duration) + "}");
-            matrixShowTime(it->duration);
+            if (getOwnRole() == ROLE_DISPLAY)
+            {
+                matrixShowTime(it->duration);
+            }
             break;
         }
     }
