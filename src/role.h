@@ -4,7 +4,8 @@ enum Role
 {
     ROLE_IGNORE,
     ROLE_START,
-    ROLE_ZIEL
+    ROLE_ZIEL,
+    ROLE_DISPLAY
 };
 
 enum MasterStatus

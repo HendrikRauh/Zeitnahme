@@ -5,18 +5,19 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="/config.css" />
-        <link rel="stylesheet" href="/floating-btn.css" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     </head>
     <body>
         <h1>Konfiguration</h1>
-        <div class="status-row">
-            <span id="statusEmoji" class="unknown">⚪</span>
-            <span id="statusText">Unbekannt</span>
-        </div>
-        <div class="threshold-container">
-            <h3>Sensor-Einstellungen</h3>
 
+        <!-- Sensor-Einstellungen: nur für Start/Ziel-Geräte -->
+        <div id="sensorSettings" class="threshold-container hidden">
+            <div class="status-row">
+                <span id="statusEmoji" class="unknown">⚪</span>
+                <span id="statusText">Unbekannt</span>
+            </div>
+
+            <h3>Sensor-Einstellungen</h3>
             <div class="sensor-grid">
                 <div class="sensor-item">
                     <label class="sensor-label" for="minDistanceInput"
@@ -72,6 +73,32 @@
                 <small
                     >Auslösung erfolgt, wenn die gemessene Distanz zwischen Min-
                     und Max-Wert liegt.</small
+                >
+            </div>
+        </div>
+
+        <!-- Helligkeit-Einstellungen: nur für Anzeige-Geräte -->
+        <div id="brightnessSettings" class="threshold-container hidden">
+            <h3>Anzeige-Einstellungen</h3>
+
+            <div class="brightness-container">
+                <label class="brightness-label" for="brightnessInput"
+                    >Helligkeit: <span id="brightnessValue">1</span></label
+                >
+                <input
+                    type="range"
+                    id="brightnessInput"
+                    class="brightness-slider"
+                    min="1"
+                    max="15"
+                    step="1"
+                    value=""
+                    title="Matrix-Helligkeit (1-15)"
+                />
+            </div>
+            <div class="distance-info">
+                <small
+                    >Helligkeit der LED-Matrix (1 = dunkel, 15 = hell).</small
                 >
             </div>
         </div>

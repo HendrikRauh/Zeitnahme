@@ -1,7 +1,4 @@
-#include <data.h>
-#include <Sensor.h>
-#include <server.h>
-#include <deque>
+#include "data.h"
 
 Role currentRole;
 MasterStatus masterStatus = MASTER_UNKNOWN;
@@ -332,6 +329,48 @@ void setMaxDistance(int maxDistance)
 
     // Sensor-Cache aktualisieren
     updateDistanceCache();
+}
+
+// Brightness Settings Funktionen
+#ifndef DEFAULT_BRIGHTNESS
+#define DEFAULT_BRIGHTNESS 1
+#endif
+
+int getBrightness()
+{
+    preferences.begin("lichtschranke", true);
+    int brightness = preferences.getInt("brightness", DEFAULT_BRIGHTNESS);
+    preferences.end();
+
+    Serial.printf("[BRIGHTNESS_DEBUG] Helligkeit geladen: %d\n", brightness);
+    return brightness;
+}
+
+void setBrightness(int brightness)
+{
+    if (brightness < 1 || brightness > 15)
+    {
+        Serial.printf("[BRIGHTNESS_DEBUG] Ungültiger Helligkeit-Wert: %d. Verwende Default (%d).\n", brightness, DEFAULT_BRIGHTNESS);
+        brightness = DEFAULT_BRIGHTNESS;
+    }
+
+    preferences.begin("lichtschranke", false);
+    preferences.putInt("brightness", brightness);
+    preferences.end();
+
+    Serial.printf("[BRIGHTNESS_DEBUG] Helligkeit gesetzt auf: %d\n", brightness);
+
+    // Matrix-Helligkeit sofort aktualisieren wenn es ein Display-Gerät ist
+    // Verwende cached role für bessere Performance
+    if (roleLoaded && cachedOwnRole == ROLE_DISPLAY)
+    {
+        matrixSetBrightness(brightness);
+    }
+    else if (!roleLoaded && getOwnRole() == ROLE_DISPLAY)
+    {
+        // Fallback für den unwahrscheinlichen Fall, dass der Cache noch nicht geladen ist
+        matrixSetBrightness(brightness);
+    }
 }
 
 void addRaceStart(unsigned long startTime)
@@ -992,6 +1031,16 @@ void updateWebSocketClients()
         if (it->isFinished)
         {
             wsBrodcastMessage("{\"type\":\"lastTime\",\"value\":" + String(it->duration) + "}");
+            // Verwende cached role für bessere Performance in häufig aufgerufener Funktion
+            if (roleLoaded && cachedOwnRole == ROLE_DISPLAY)
+            {
+                matrixShowTime(it->duration);
+            }
+            else if (!roleLoaded && getOwnRole() == ROLE_DISPLAY)
+            {
+                // Fallback für den unwahrscheinlichen Fall, dass der Cache noch nicht geladen ist
+                matrixShowTime(it->duration);
+            }
             break;
         }
     }

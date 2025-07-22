@@ -1,11 +1,20 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include "Preferences.h"
-#include <Utility.h>
-#include <data.h>
-#include <deviceInfo.h>
+#include <Arduino.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
+#include <vector>
+#include <algorithm>
+#include <deque>
+
+#include "Utility.h"
+#include "deviceInfo.h"
+#include "role.h"
+#include "espnow.h"
+#include "Sensor.h"
+#include "server.h"
+#include "anzeige.h"
 
 Role getOwnRole();
 
@@ -16,14 +25,6 @@ void loadDeviceListFromPreferences();
 void writeDeviceListToPreferences();
 
 void resetAll();
-
-#include <Arduino.h>
-#include <vector>
-#include <algorithm>
-#include <role.h>
-#include <Utility.h>
-#include <espnow.h>
-#include <deque>
 
 // Forward declarations
 void broadcastMasterStatus();
@@ -110,5 +111,9 @@ void slaveHandleRaceFinish(unsigned long finishTime, const uint8_t *finishDevice
 
 // WebSocket-Updates
 void updateWebSocketClients();
+
+// Brightness functions for display devices
+int getBrightness();
+void setBrightness(int brightness);
 
 #endif

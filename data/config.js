@@ -6,6 +6,8 @@ let savedDevices = [];
 let discoveredDevices = [];
 let wsManager;
 
+window.saveDeviceRole = saveDeviceRole;
+
 // Initialisierung
 document.addEventListener("DOMContentLoaded", function () {
     // Felder und Buttons initial leeren und deaktivieren
@@ -103,15 +105,61 @@ function loadDeviceInfo() {
         .then((data) => {
             selfMac = data.selfMac;
             selfRole = data.selfRole;
+            // Show/hide settings based on role
+            updateUIForRole(selfRole);
+            // Lade rollenspezifische Einstellungen NACH dem Setzen der Rolle
+            loadRoleSpecificSettings();
             showAllDevices(); // Aktualisiere Anzeige wenn MAC bekannt ist
         })
         .catch((err) => console.log("Fehler beim Laden der Device-Info:", err));
 
-    // Lade Distanz-Einstellungen
-    loadDistanceSettings();
-
     // Lade Gerätepräferenzen
     loadDevicePreferences();
+}
+
+function updateUIForRole(role) {
+    const sensorSettings = document.getElementById("sensorSettings");
+    const brightnessSettings = document.getElementById("brightnessSettings");
+
+    if (role === "Start" || role === "Ziel") {
+        // Show sensor settings for Start/Ziel devices
+        sensorSettings.classList.remove("hidden");
+        brightnessSettings.classList.add("hidden");
+    } else if (role === "Anzeige") {
+        // Show brightness settings for display devices
+        sensorSettings.classList.add("hidden");
+        brightnessSettings.classList.remove("hidden");
+    } else {
+        // Hide both for unknown/ignore devices
+        sensorSettings.classList.add("hidden");
+        brightnessSettings.classList.add("hidden");
+    }
+}
+
+function loadRoleSpecificSettings() {
+    // Lade Distanz-Einstellungen für Start/Ziel
+    if (selfRole === "Start" || selfRole === "Ziel") {
+        loadDistanceSettings();
+    }
+
+    // Lade Helligkeit-Einstellungen für Anzeige
+    if (selfRole === "Anzeige") {
+        loadBrightnessSettings();
+    }
+}
+
+function loadBrightnessSettings() {
+    fetch("/get_brightness")
+        .then((response) => response.json())
+        .then((data) => {
+            const brightnessInput = document.getElementById("brightnessInput");
+            const brightnessValue = document.getElementById("brightnessValue");
+            if (brightnessInput && brightnessValue) {
+                brightnessInput.value = data.brightness;
+                brightnessValue.textContent = data.brightness;
+            }
+        })
+        .catch((err) => console.log("Fehler beim Laden der Helligkeit:", err));
 }
 
 function loadDevicePreferences() {
@@ -164,6 +212,36 @@ function setupEventListeners() {
     document.getElementById("saveMaxDistanceBtn").onclick = function () {
         saveMaxDistance();
     };
+
+    // Brightness Input with auto-save
+    const brightnessInput = document.getElementById("brightnessInput");
+    const brightnessValue = document.getElementById("brightnessValue");
+    let brightnessTimeout = null; // Für debounced saving
+
+    if (brightnessInput && brightnessValue) {
+        brightnessInput.addEventListener("input", function () {
+            // Update display value
+            brightnessValue.textContent = brightnessInput.value;
+
+            // Clear existing timeout
+            if (brightnessTimeout) {
+                clearTimeout(brightnessTimeout);
+            }
+
+            // Set new timeout for auto-save after 500ms of no changes
+            brightnessTimeout = setTimeout(() => {
+                saveBrightnessAutomatic(brightnessInput.value);
+            }, 500);
+        });
+
+        brightnessInput.addEventListener("change", function () {
+            // Immediate save on change (when user releases slider)
+            if (brightnessTimeout) {
+                clearTimeout(brightnessTimeout);
+            }
+            saveBrightnessAutomatic(brightnessInput.value);
+        });
+    }
 
     // Reset Button
     document.getElementById("resetBtn").onclick = function () {
@@ -511,7 +589,11 @@ function createDeviceItem(container, dev, isSelf) {
         statusText = "Unbekannt";
     }
 
-    let roleOptions = (isSelf ? ["Start", "Ziel"] : ["-", "Start", "Ziel"])
+    let roleOptions = (
+        isSelf
+            ? ["Start", "Ziel", "Anzeige"]
+            : ["-", "Start", "Ziel", "Anzeige"]
+    )
         .map(
             (opt) =>
                 `<option value="${opt}"${
@@ -672,17 +754,31 @@ function handleDeviceRoleChanged(data) {
     showAllDevices();
 }
 
-function getRoleDisplayName(role) {
-    switch (role) {
-        case 0:
-            return "Keine Rolle";
-        case 1:
-            return "Master";
-        case 2:
-            return "Start";
-        case 3:
-            return "Ziel";
-        default:
-            return "Unbekannt";
+// Brightness functions with automatic saving
+function saveBrightnessAutomatic(brightness) {
+    const value = parseInt(brightness);
+    if (value < 1 || value > 15) {
+        console.error("Ungültiger Helligkeitswert:", value);
+        return;
     }
+
+    const formData = new FormData();
+    formData.append("brightness", value);
+
+    fetch("/set_brightness", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => response.text())
+        .then((message) => {
+            console.log("Helligkeit automatisch gespeichert:", message);
+            // Kein Alert - stille Speicherung
+        })
+        .catch((error) => {
+            console.error(
+                "Fehler beim automatischen Speichern der Helligkeit:",
+                error
+            );
+            // Kein Alert - nur Console-Log für Debug-Zwecke
+        });
 }

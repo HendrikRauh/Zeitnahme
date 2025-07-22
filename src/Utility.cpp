@@ -11,6 +11,8 @@ String roleToString(Role role)
         return "Ziel";
     case ROLE_IGNORE:
         return "Ignorieren";
+    case ROLE_DISPLAY:
+        return "Anzeige";
     default:
         return "unknown";
     }
@@ -37,6 +39,8 @@ Role stringToRole(const String &text)
         return ROLE_START;
     if (text == "Ziel")
         return ROLE_ZIEL;
+    if (text == "Anzeige")
+        return ROLE_DISPLAY;
     return ROLE_IGNORE;
 }
 
@@ -136,6 +140,26 @@ void handleIdentityMessage(const uint8_t *senderMac, Role senderRole)
                 }
                 break;
             }
+        }
+    }
+    else
+    {
+        // Prüfe, ob wir kürzlich eine Rollenänderungsanfrage an dieses Gerät gesendet haben
+        // Falls ja, füge es jetzt zu unserer gespeicherten Liste hinzu
+        if (checkIfDeviceIsDiscoveredList(senderMac) && senderRole != ROLE_IGNORE)
+        {
+            Serial.printf("[ROLE_DEBUG] Gerät %s nicht in gespeicherter Liste, aber in entdeckter Liste gefunden. Füge zur gespeicherten Liste hinzu.\n", macToString(senderMac).c_str());
+            changeSavedDevice(senderMac, senderRole);
+            roleChanged = true;
+            // WebSocket-Update für Rollenbestätigung senden
+            JsonDocument doc;
+            doc["type"] = "device_role_changed";
+            JsonObject data = doc["data"].to<JsonObject>();
+            data["mac"] = macToShortString(senderMac);
+            data["role"] = roleToString(senderRole);
+            String json;
+            serializeJson(doc, json);
+            wsBrodcastMessage(json);
         }
     }
     // Aktualisiere entdeckte Geräte Liste

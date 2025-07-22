@@ -270,6 +270,28 @@ if (request->hasParam("maxDistance", true)) {
   request->send(400, "text/plain", "Fehlender Max-Distanz-Parameter");
 } });
 
+  server.on("/get_brightness", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] GET /get_brightness aufgerufen.");
+int brightness = getBrightness();
+JsonDocument doc;
+doc["brightness"] = brightness;
+String json;
+serializeJson(doc, json);
+request->send(200, "application/json", json); });
+
+  server.on("/set_brightness", HTTP_POST, [](AsyncWebServerRequest *request)
+            {
+Serial.println("[WEB] POST /set_brightness aufgerufen.");
+if (request->hasParam("brightness", true)) {
+  int brightness = request->getParam("brightness", true)->value().toInt();
+  setBrightness(brightness);
+  String msg = "Helligkeit gesetzt auf " + String(brightness);
+  request->send(200, "text/plain", msg);
+} else {
+  request->send(400, "text/plain", "Fehlender Helligkeits-Parameter");
+} });
+
   server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *request)
             {
 
