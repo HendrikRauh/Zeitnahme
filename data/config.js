@@ -217,24 +217,23 @@ function setupEventListeners() {
     const brightnessInput = document.getElementById("brightnessInput");
     const brightnessValue = document.getElementById("brightnessValue");
     let brightnessTimeout = null; // Für debounced saving
-    
+
     if (brightnessInput && brightnessValue) {
         brightnessInput.addEventListener("input", function () {
+            // Update display value
             brightnessValue.textContent = brightnessInput.value;
-        });
-        
-        brightnessInput.addEventListener("input", function () {
+
             // Clear existing timeout
             if (brightnessTimeout) {
                 clearTimeout(brightnessTimeout);
             }
-            
+
             // Set new timeout for auto-save after 500ms of no changes
             brightnessTimeout = setTimeout(() => {
                 saveBrightnessAutomatic(brightnessInput.value);
             }, 500);
         });
-        
+
         brightnessInput.addEventListener("change", function () {
             // Immediate save on change (when user releases slider)
             if (brightnessTimeout) {
@@ -762,21 +761,24 @@ function saveBrightnessAutomatic(brightness) {
         console.error("Ungültiger Helligkeitswert:", value);
         return;
     }
-    
+
     const formData = new FormData();
     formData.append("brightness", value);
-    
+
     fetch("/set_brightness", {
         method: "POST",
         body: formData,
     })
-    .then((response) => response.text())
-    .then((message) => {
-        console.log("Helligkeit automatisch gespeichert:", message);
-        // Kein Alert - stille Speicherung
-    })
-    .catch((error) => {
-        console.error("Fehler beim automatischen Speichern der Helligkeit:", error);
-        // Kein Alert - nur Console-Log für Debug-Zwecke
-    });
+        .then((response) => response.text())
+        .then((message) => {
+            console.log("Helligkeit automatisch gespeichert:", message);
+            // Kein Alert - stille Speicherung
+        })
+        .catch((error) => {
+            console.error(
+                "Fehler beim automatischen Speichern der Helligkeit:",
+                error
+            );
+            // Kein Alert - nur Console-Log für Debug-Zwecke
+        });
 }
