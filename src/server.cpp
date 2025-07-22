@@ -88,8 +88,7 @@ void initWebpage()
 {
   server.on("/NotoSansMono-Black.ttf", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/NotoSansMono-Black.ttf.gz", "font/ttf");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/NotoSansMono-Black.ttf", "font/ttf");
     request->send(response); });
   // LittleFS initialisieren
   if (!LittleFS.begin(true))
@@ -113,16 +112,33 @@ void initWebpage()
         doc["masterMac"] = macToShortString(getMasterMac());
     }
     doc["firmware_hash"] = ESP.getSketchMD5();
-    // Filesystem-Hash aus .hash lesen
-    if (LittleFS.exists("/.hash")) {
-        File file = LittleFS.open("/.hash", "r");
-        if (file) {
-            String fsHash = file.readString();
-            fsHash.trim();
-            doc["filesystem_hash"] = fsHash;
-            file.close();
+    
+    // Berechne Filesystem-Hash zur Laufzeit
+    String fsHash = "unknown";
+    if (LittleFS.begin()) {
+        // Einfacher Hash basierend auf verfügbaren Dateien
+        uint32_t hashValue = 0;
+        File root = LittleFS.open("/");
+        if (root && root.isDirectory()) {
+            File file = root.openNextFile();
+            while (file) {
+                if (!file.isDirectory()) {
+                    // Hash aus Dateiname und Größe
+                    String fileName = file.name();
+                    size_t fileSize = file.size();
+                    // Einfacher String-Hash
+                    for (int i = 0; i < fileName.length(); i++) {
+                        hashValue = hashValue * 31 + fileName.charAt(i);
+                    }
+                    hashValue ^= fileSize;
+                }
+                file = root.openNextFile();
+            }
         }
+        fsHash = String(hashValue, HEX);
     }
+    doc["filesystem_hash"] = fsHash;
+    
     String json;
     serializeJson(doc, json);
     request->send(200, "application/json", json); });
@@ -148,8 +164,7 @@ void initWebpage()
       loadDeviceListFromPreferences();
       searchForDevices();              
       Serial.println("[WEB] GET /config aufgerufen.");
-      AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.html.gz", "text/html");
-      response->addHeader("Content-Encoding", "gzip");
+      AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.html", "text/html");
       request->send(response); });
 
   server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request)
@@ -289,45 +304,34 @@ if (request->hasParam("mac", true) && request->hasParam("role", true)) {
   server.addHandler(&ws);
 
   // Statische Dateien über LittleFS bereitstellen (WICHTIG: Nach allen API-Routen!)
-  // Spezifische Dateien explizit mappen mit korrekten Compression-Headern
+  // Spezifische Dateien explizit mappen
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/index.html", "text/html");
     request->send(response); });
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/style.css.gz", "text/css");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/style.css", "text/css");
     request->send(response); });
   server.on("/app.js", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/app.js.gz", "application/javascript");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/app.js", "application/javascript");
     request->send(response); });
   server.on("/config.css", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.css.gz", "text/css");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.css", "text/css");
     request->send(response); });
   server.on("/config.js", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.js.gz", "application/javascript");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/config.js", "application/javascript");
     request->send(response); });
   server.on("/wsManager.js", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/wsManager.js.gz", "application/javascript");
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response); });
-  server.on("/.hash", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/.hash", "text/plain");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/wsManager.js", "application/javascript");
     request->send(response); });
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/favicon.ico.gz", "image/x-icon");
-    response->addHeader("Content-Encoding", "gzip");
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/favicon.ico", "image/x-icon");
     request->send(response); });
 
   server.begin();
