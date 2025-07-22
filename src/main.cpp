@@ -18,18 +18,31 @@ char macStr[18] = {0};
 
 void setup()
 {
-
   Serial.begin(115200);
   initDeviceInfo();
   initWebpage();
   initEspNow();
   initWebsocket();
   loadDeviceListFromPreferences();
-  // TODO: Nur das verwenden was auch gebraucht wird (Anzeige oder Sensor + Tasks)
-  initSensor();
-  initLichtschrankeTask();
-  // ----
-  initMatrix();
+
+  Role currentRole = getOwnRole();
+  Serial.printf("[SETUP] Geräterolle: %s\n", roleToString(currentRole).c_str());
+
+  if (currentRole == ROLE_DISPLAY)
+  {
+    Serial.println("[SETUP] Initialisiere Display-spezifische Komponenten...");
+    initMatrix();
+  }
+  else if (currentRole == ROLE_START || currentRole == ROLE_ZIEL)
+  {
+    Serial.println("[SETUP] Initialisiere Sensor-spezifische Komponenten...");
+    initSensor();
+    initLichtschrankeTask();
+  }
+  else
+  {
+    Serial.printf("[SETUP] Unbekannte oder ignorierte Rolle: %s\n", roleToString(currentRole).c_str());
+  }
 
   // Gestaffelte Initialisierung basierend auf MAC-Adresse (reduziert für bessere Performance)
   // Geräte mit niedrigerer MAC warten weniger
@@ -64,5 +77,4 @@ void loop()
 {
   // Verhindert Busy-Waiting, gibt CPU-Zeit frei, verbessert Timing für Sensoren
   vTaskDelay(pdMS_TO_TICKS(1)); // 1 ms Pause, tickratenunabhängig
-  matrixShowTime(millis());
 }
